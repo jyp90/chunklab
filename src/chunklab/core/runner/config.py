@@ -7,12 +7,26 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 
 class ChunkerGrid(BaseModel):
     name: str
     params: dict[str, list[Any]] = Field(default_factory=dict)
+
+    @field_validator("params")
+    @classmethod
+    def _params_must_be_scalar(
+        cls, params: dict[str, list[Any]], info: ValidationInfo
+    ) -> dict[str, list[Any]]:
+        name = info.data.get("name", "?")
+        for key, values in params.items():
+            for value in values:
+                if not isinstance(value, int | float | str | bool):
+                    raise ValueError(
+                        f"chunker '{name}' param '{key}' has non-scalar value {value!r}"
+                    )
+        return params
 
 
 class RetrievalGrid(BaseModel):

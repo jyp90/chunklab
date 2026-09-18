@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from chunklab.core.runner.config import Combo, ExperimentConfig, expand_matrix
+from chunklab.core.runner.config import Combo, ChunkerGrid, ExperimentConfig, expand_matrix
 
 YAML = """
 documents: ["docs/*.md"]
@@ -96,3 +96,13 @@ def test_resolve_documents_supports_recursive_globs(tmp_path: Path):
         documents=["docs/**/*.md"], questions="q", chunkers=[], embedders=[]
     )
     assert [p.name for p in cfg.resolve_documents(tmp_path)] == ["a.md", "c.md"]
+
+
+def test_chunker_grid_rejects_non_scalar_param_values():
+    with pytest.raises(ValueError, match="chunk_size"):
+        ChunkerGrid(name="recursive", params={"chunk_size": [[10, 20]]})
+
+
+def test_chunker_grid_accepts_scalar_param_values():
+    grid = ChunkerGrid(name="recursive", params={"chunk_size": [10], "sep": ["x"], "on": [True]})
+    assert grid.params["chunk_size"] == [10]
