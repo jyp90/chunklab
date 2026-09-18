@@ -19,6 +19,10 @@ class DocumentTooLargeError(ValueError):
     pass
 
 
+class EmptyDocumentError(ValueError):
+    pass
+
+
 def normalize(text: str) -> str:
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = re.sub(r"[ \t]+\n", "\n", text)
@@ -44,7 +48,10 @@ def load_document(path: Path) -> Document:
         raw = _read_pdf(path)
     else:
         raise UnsupportedFormatError(f"unsupported file type: {path.suffix} ({path})")
-    return Document(id=path.stem, text=normalize(raw), source=str(path.resolve()))
+    text = normalize(raw)
+    if not text.strip():
+        raise EmptyDocumentError(f"{path} contains no text")
+    return Document(id=path.stem, text=text, source=str(path.resolve()))
 
 
 def load_documents(

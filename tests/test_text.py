@@ -5,6 +5,7 @@ import pytest
 from chunklab.core.text import (
     MAX_DOCUMENT_BYTES,
     DocumentTooLargeError,
+    EmptyDocumentError,
     UnsupportedFormatError,
     load_document,
     load_documents,
@@ -75,6 +76,25 @@ def test_rejects_oversized_document(tmp_path: Path, monkeypatch):
     with pytest.raises(DocumentTooLargeError, match="10 bytes"):
         load_document(p)
     assert MAX_DOCUMENT_BYTES == 10 * 1024 * 1024
+
+
+def test_load_document_rejects_text_only_whitespace(tmp_path: Path):
+    p = tmp_path / "empty.md"
+    p.write_text("   \n\n\t\n", encoding="utf-8")
+    with pytest.raises(EmptyDocumentError, match="empty.md"):
+        load_document(p)
+
+
+def test_load_documents_skips_empty_document_when_on_error_given(tmp_path: Path):
+    empty = tmp_path / "empty.md"
+    empty.write_text("\n")
+    good = tmp_path / "good.md"
+    good.write_text("hello")
+    seen: list[tuple[Path, Exception]] = []
+    docs = load_documents([empty, good], on_error=lambda p, e: seen.append((p, e)))
+    assert [d.id for d in docs] == ["good"]
+    assert len(seen) == 1
+    assert isinstance(seen[0][1], EmptyDocumentError)
 
 
 def test_load_documents_rejects_duplicate_ids(tmp_path: Path):
