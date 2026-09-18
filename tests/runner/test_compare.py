@@ -72,3 +72,14 @@ def test_format_table_contains_ids_metrics_and_error():
     assert "0.750" in table
     assert "ERROR" in table
     assert "hit@5" in table.splitlines()[0]
+
+
+def test_format_table_renders_dash_for_missing_metric():
+    res = _result(
+        _combo("a|fake|k=3|hybrid=False", **{"hit@3": 0.5, "mrr": 0.4}),
+        _combo("b|fake|k=5|hybrid=False", **{"hit@5": 0.6, "mrr": 0.4}),
+    )
+    table = format_table(res)
+    assert "nan" not in table
+    assert "-" in table.splitlines()[2]
+    assert "        -" in table

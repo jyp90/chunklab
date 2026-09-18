@@ -72,6 +72,8 @@ def format_table(result: RunResult) -> str:
         if c.error:
             lines.append(f"{c.combo_id:<{id_width}}  ERROR: {c.error}")
             continue
-        cells = "  ".join(f"{c.metrics.get(k, float('nan')):>9.3f}" for k in metric_keys)
+        cells = "  ".join(
+            f"{c.metrics[k]:>9.3f}" if k in c.metrics else f"{'-':>9}" for k in metric_keys
+        )
         lines.append(f"{c.combo_id:<{id_width}}  {cells}")
     return "\n".join(lines)
