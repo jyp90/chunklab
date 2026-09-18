@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 
 from chunklab.core.models import Document
@@ -47,7 +47,12 @@ def load_document(path: Path) -> Document:
     return Document(id=path.stem, text=normalize(raw), source=str(path.resolve()))
 
 
-def load_documents(paths: Iterable[Path]) -> list[Document]:
+def load_documents(
+    paths: Iterable[Path], on_error: Callable[[Path, Exception], None] | None = None
+) -> list[Document]:
+    """Load every path. A per-document failure is re-raised unless `on_error` is
+    given, in which case the document is skipped after reporting it. A duplicate
+    document id is always a hard error."""
     docs: list[Document] = []
     seen: dict[str, Path] = {}
     for p in paths:
@@ -55,5 +60,17 @@ def load_documents(paths: Iterable[Path]) -> list[Document]:
         if p.stem in seen:
             raise ValueError(f"duplicate document id '{p.stem}': {seen[p.stem]} and {p}")
         seen[p.stem] = p
-        docs.append(load_document(p))
+        try:
+            docs.append(load_document(p))
+        except (
+            UnsupportedFormatError,
+            DocumentTooLargeError,
+            RuntimeError,
+            ValueError,
+            OSError,
+        ) as e:
+            if on_error is None:
+                raise
+            on_error(p, e)
+            continue
     return docs

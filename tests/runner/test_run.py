@@ -143,3 +143,14 @@ def test_to_json_creates_parent_dirs(workspace: Path):
     out = workspace / "new" / "dir" / "r.json"
     result.to_json(out)
     assert json.loads(out.read_text())["run_id"] == result.run_id
+
+
+def test_run_experiment_warns_and_skips_bad_document(workspace: Path):
+    (workspace / "docs" / "bad.pdf").write_bytes(b"not a pdf")
+    cfg = ExperimentConfig.from_yaml(workspace / "exp.yaml")
+    cfg = cfg.model_copy(update={"documents": ["docs/*"]})
+    warnings: list[str] = []
+    result = run_experiment(cfg, workspace, warn=warnings.append)
+    assert len(warnings) == 1
+    assert "bad.pdf" in warnings[0]
+    assert result.combos and all(c.error is None for c in result.combos)

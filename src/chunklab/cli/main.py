@@ -47,7 +47,12 @@ def run(
         if not quiet:
             typer.echo(f"  done: {combo_id}", err=True)
 
-    result = run_experiment(cfg, base_dir, progress=progress)
+    result = run_experiment(
+        cfg,
+        base_dir,
+        progress=progress,
+        warn=lambda m: typer.echo(f"  warning: {m}", err=True),
+    )
     result.to_json(out)
     typer.echo(format_table(result))
     typer.echo(f"\nsaved: {out}")

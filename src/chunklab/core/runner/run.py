@@ -132,9 +132,13 @@ def run_experiment(
     base_dir: Path,
     embedder_factory: Callable[[str], Embedder] = build_embedder,
     progress: Callable[[str], None] | None = None,
+    warn: Callable[[str], None] | None = None,
 ) -> RunResult:
     base_dir = Path(base_dir)
-    docs = load_documents(cfg.resolve_documents(base_dir))
+    docs = load_documents(
+        cfg.resolve_documents(base_dir),
+        on_error=(lambda p, e: warn(f"skipped {p}: {type(e).__name__}: {e}")) if warn else None,
+    )
     if not docs:
         raise ValueError(f"no documents matched {cfg.documents}")
     questions = load_questions(base_dir / cfg.questions)

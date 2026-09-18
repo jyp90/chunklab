@@ -80,3 +80,25 @@ def test_load_documents_rejects_duplicate_ids(tmp_path: Path):
     (tmp_path / "b" / "same.md").write_text("two")
     with pytest.raises(ValueError, match="duplicate document id"):
         load_documents([tmp_path / "a" / "same.md", tmp_path / "b" / "same.md"])
+
+
+def test_load_documents_skips_bad_file_when_on_error_given(tmp_path: Path):
+    bad = tmp_path / "x.docx"
+    bad.write_bytes(b"")
+    good = tmp_path / "good.md"
+    good.write_text("hello")
+    seen: list[tuple[Path, Exception]] = []
+    docs = load_documents([bad, good], on_error=lambda p, e: seen.append((p, e)))
+    assert [d.id for d in docs] == ["good"]
+    assert len(seen) == 1
+    assert seen[0][0] == bad
+    assert isinstance(seen[0][1], UnsupportedFormatError)
+
+
+def test_load_documents_raises_without_on_error(tmp_path: Path):
+    bad = tmp_path / "x.docx"
+    bad.write_bytes(b"")
+    good = tmp_path / "good.md"
+    good.write_text("hello")
+    with pytest.raises(UnsupportedFormatError):
+        load_documents([bad, good])
