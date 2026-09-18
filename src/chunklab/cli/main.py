@@ -95,8 +95,17 @@ def generate_questions_cmd(
 ) -> None:
     docs = load_documents(paths)
     questions = generate_questions(
-        docs, build_llm(llm), per_doc=per_doc, seed=seed, min_len=min_len, max_len=max_len
+        docs,
+        build_llm(llm),
+        per_doc=per_doc,
+        seed=seed,
+        min_len=min_len,
+        max_len=max_len,
+        warn=lambda m: typer.echo(f"warning: {m}", err=True),
     )
+    if not questions:
+        typer.echo("error: no questions generated", err=True)
+        raise typer.Exit(code=2)
     save_questions(questions, out)
     typer.echo(f"generated {len(questions)} questions from {len(docs)} document(s) -> {out}")
 

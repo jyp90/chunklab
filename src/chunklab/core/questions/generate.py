@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 import re
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from chunklab.core.models import Document, Question, Span
 from chunklab.core.questions.llm import LLM
@@ -49,10 +49,16 @@ def generate_questions(
     seed: int = 0,
     min_len: int = 200,
     max_len: int = 600,
+    warn: Callable[[str], None] | None = None,
 ) -> list[Question]:
     out: list[Question] = []
     for doc in docs:
         spans = sample_passages(doc, per_doc, seed=seed, min_len=min_len, max_len=max_len)
+        if warn is not None and len(spans) < per_doc:
+            warn(
+                f"{doc.id}: only {len(spans)} paragraph(s) >= {min_len} chars "
+                f"(requested {per_doc}); lower --min-len"
+            )
         for i, span in enumerate(spans):
             passage = doc.text[span.start : span.end]
             reply = llm.complete(QUESTION_PROMPT.format(passage=passage))

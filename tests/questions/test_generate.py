@@ -53,6 +53,31 @@ def test_generate_questions_builds_questions_with_spans(sample_doc_path: Path):
     assert passage in llm.prompts[0]
 
 
+def test_generate_questions_warns_when_doc_yields_too_few_passages():
+    doc = Document("tiny", "short one\n\nshort two\n")
+    warnings: list[str] = []
+    qs = generate_questions([doc], FakeLLM(), per_doc=3, min_len=200, warn=warnings.append)
+    assert qs == []
+    assert len(warnings) == 1
+    assert warnings[0].startswith("tiny: only 0 paragraph(s) >= 200 chars (requested 3)")
+    assert "--min-len" in warnings[0]
+
+
+def test_generate_questions_warns_when_fewer_than_requested():
+    doc = _doc_with_paragraphs(2, 300)
+    warnings: list[str] = []
+    generate_questions([doc], FakeLLM(), per_doc=5, min_len=200, warn=warnings.append)
+    assert len(warnings) == 1
+    assert "only 2 paragraph(s)" in warnings[0]
+
+
+def test_generate_questions_does_not_warn_when_enough_passages():
+    doc = _doc_with_paragraphs(5, 300)
+    warnings: list[str] = []
+    generate_questions([doc], FakeLLM(), per_doc=3, min_len=200, warn=warnings.append)
+    assert warnings == []
+
+
 def test_generate_questions_skips_empty_reply():
     doc = _doc_with_paragraphs(3, 300)
     qs = generate_questions([doc], FakeLLM(reply="   \n"), per_doc=3)

@@ -117,3 +117,16 @@ def test_generate_questions_with_fake_llm(tmp_path: Path, sample_doc_path: Path)
     qs = load_questions(out)
     assert len(qs) == 2
     assert all(q.spans[0].doc_id == "sample" for q in qs)
+
+
+def test_generate_questions_exits_2_when_nothing_generated(tmp_path: Path):
+    src = tmp_path / "notes.txt"
+    src.write_text("short one\n\nshort two\n")
+    out = tmp_path / "q.json"
+    r = runner.invoke(
+        app, ["generate-questions", str(src), "--out", str(out), "--llm", "fake", "--per-doc", "2"]
+    )
+    assert r.exit_code == 2, r.output
+    assert "warning: notes: only 0 paragraph(s) >= 200 chars (requested 2)" in r.output
+    assert "error: no questions generated" in r.output
+    assert not out.exists()
