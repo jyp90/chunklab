@@ -29,7 +29,12 @@ class GeminiEmbedder:
             resp = client.models.embed_content(
                 model=self.model, contents=texts[i : i + self.batch_size]
             )
-            rows.extend(e.values for e in resp.embeddings)
+            for e in resp.embeddings or []:
+                if e.values is None:
+                    raise RuntimeError(
+                        f"gemini returned an embedding with no values (model={self.model})"
+                    )
+                rows.append(list(e.values))
         if not rows:
             return np.zeros((0, 0), dtype=np.float32)
         return l2_normalize(np.asarray(rows, dtype=np.float32))
