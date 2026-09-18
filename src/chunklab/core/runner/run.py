@@ -49,6 +49,7 @@ class RunResult:
         }
 
     def to_json(self, path: Path) -> None:
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
         Path(path).write_text(json.dumps(self.to_dict(), indent=2), encoding="utf-8")
 
     @classmethod
@@ -141,7 +142,10 @@ def run_experiment(
 
     results: list[ComboResult] = []
     chunk_cache: dict[tuple[str, tuple], list[Chunk]] = {}
-    with EmbeddingCache(Path(cfg.cache_path).expanduser()) as cache:
+    cache_file = Path(cfg.cache_path).expanduser()
+    if not cache_file.is_absolute():
+        cache_file = base_dir / cache_file
+    with EmbeddingCache(cache_file) as cache:
         embedders = {spec: CachedEmbedder(embedder_factory(spec), cache) for spec in cfg.embedders}
         for combo in expand_matrix(cfg):
             try:

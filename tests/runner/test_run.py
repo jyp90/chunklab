@@ -118,3 +118,28 @@ def test_validate_questions_rejects_unknown_doc_and_out_of_range(sample_doc_path
         validate_questions([Question("q", "t", (Span("nope", 0, 5),))], [doc])
     with pytest.raises(ValueError, match="out of range"):
         validate_questions([Question("q", "t", (Span("sample", 0, 10_000),))], [doc])
+
+
+def test_relative_cache_path_resolves_against_config_dir(workspace: Path, tmp_path, monkeypatch):
+    exp = workspace / "exp.yaml"
+    exp.write_text(
+        "\n".join(
+            line for line in exp.read_text().splitlines() if not line.startswith("cache_path:")
+        )
+        + '\ncache_path: "c.db"\n'
+    )
+    elsewhere = tmp_path.parent / "cwd-elsewhere"
+    elsewhere.mkdir(exist_ok=True)
+    monkeypatch.chdir(elsewhere)
+    cfg = ExperimentConfig.from_yaml(exp)
+    run_experiment(cfg, workspace)
+    assert (workspace / "c.db").exists()
+    assert not (elsewhere / "c.db").exists()
+
+
+def test_to_json_creates_parent_dirs(workspace: Path):
+    cfg = ExperimentConfig.from_yaml(workspace / "exp.yaml")
+    result = run_experiment(cfg, workspace)
+    out = workspace / "new" / "dir" / "r.json"
+    result.to_json(out)
+    assert json.loads(out.read_text())["run_id"] == result.run_id
