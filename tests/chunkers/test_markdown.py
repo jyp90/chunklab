@@ -39,6 +39,24 @@ def test_large_section_is_subdivided_with_correct_offsets():
     assert all(len(c.text) <= 200 for c in chunks)
 
 
+def test_heading_only_section_merges_into_next_section():
+    doc = Document("d", "# Title\n\n## Sub\n\nbody text\n")
+    chunks = MarkdownChunker().chunk(doc)
+    assert_chunks_valid(doc, chunks)
+    assert len(chunks) == 1
+    assert chunks[0].text.startswith("# Title")
+    assert chunks[0].metadata["heading_path"] == ("Title", "Sub")
+
+
+def test_all_heading_only_sections_collapse_into_the_last_one():
+    doc = Document("d", "# A\n## B\n### C\n")
+    chunks = MarkdownChunker().chunk(doc)
+    assert_chunks_valid(doc, chunks)
+    assert len(chunks) == 1
+    assert chunks[0].text == "# A\n## B\n### C"
+    assert chunks[0].metadata["heading_path"] == ("A", "B", "C")
+
+
 def test_no_headings_falls_back_to_whole_doc():
     doc = Document("d", "plain text only\n")
     chunks = MarkdownChunker().chunk(doc)
