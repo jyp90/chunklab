@@ -7,6 +7,7 @@ from chunklab.core.runner import (
     check_thresholds,
     format_table,
     parse_thresholds,
+    unmatched_combos,
 )
 
 
@@ -14,8 +15,8 @@ def _combo(cid: str, **metrics) -> ComboResult:
     return ComboResult(cid, "recursive", {}, "fake", 5, False, metrics=dict(metrics), n_chunks=3)
 
 
-def _result(*combos: ComboResult) -> RunResult:
-    return RunResult("r", "2026-01-01T00:00:00+00:00", {}, list(combos))
+def _result(*combos: ComboResult, **config) -> RunResult:
+    return RunResult("r", "2026-01-01T00:00:00+00:00", dict(config), list(combos))
 
 
 def test_parse_thresholds():
@@ -60,6 +61,27 @@ def test_check_regression_flags_drops_beyond_max_drop():
     cur = _result(_combo("a", **{"hit@5": 0.8, "iou": 0.48}), _combo("z", **{"hit@5": 0.1}))
     v = check_regression(cur, base, max_drop=0.05)
     assert v == ["a: hit@5 dropped 0.900 -> 0.800 (max drop 0.050)"]
+
+
+def test_check_regression_flags_differing_hit_threshold():
+    base = _result(_combo("a", **{"hit@5": 0.9}), hit_threshold=0.5)
+    cur = _result(_combo("a", **{"hit@5": 0.9}), hit_threshold=0.95)
+    assert check_regression(cur, base, max_drop=0.05) == [
+        "hit_threshold differs from baseline (0.95 vs 0.5)"
+    ]
+
+
+def test_check_regression_quiet_when_hit_threshold_matches():
+    base = _result(_combo("a", **{"hit@5": 0.9}), hit_threshold=0.5)
+    cur = _result(_combo("a", **{"hit@5": 0.9}), hit_threshold=0.5)
+    assert check_regression(cur, base, max_drop=0.05) == []
+
+
+def test_unmatched_combos_lists_ids_missing_from_baseline():
+    base = _result(_combo("a", **{"hit@5": 0.9}))
+    cur = _result(_combo("a", **{"hit@5": 0.9}), _combo("b"), _combo("c"))
+    assert unmatched_combos(cur, base) == ["b", "c"]
+    assert unmatched_combos(base, base) == []
 
 
 def test_format_table_contains_ids_metrics_and_error():

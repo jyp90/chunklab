@@ -56,7 +56,19 @@ def check_regression(result: RunResult, baseline: RunResult, max_drop: float) ->
     matched = [c for c in result.combos if c.combo_id in base_by_id]
     if result.combos and not matched:
         violations.append("baseline shares no combo ids with this run (grid or embedder changed?)")
+    cur_threshold = result.config.get("hit_threshold")
+    base_threshold = baseline.config.get("hit_threshold")
+    if cur_threshold != base_threshold:
+        violations.append(
+            f"hit_threshold differs from baseline ({cur_threshold} vs {base_threshold})"
+        )
     return violations
+
+
+def unmatched_combos(result: RunResult, baseline: RunResult) -> list[str]:
+    """Combo ids produced by this run that the baseline has nothing to compare against."""
+    base_ids = {c.combo_id for c in baseline.combos}
+    return [c.combo_id for c in result.combos if c.combo_id not in base_ids]
 
 
 def format_table(result: RunResult) -> str:

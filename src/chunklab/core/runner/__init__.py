@@ -3,6 +3,7 @@ from chunklab.core.runner.compare import (
     check_thresholds,
     format_table,
     parse_thresholds,
+    unmatched_combos,
 )
 from chunklab.core.runner.config import Combo, ExperimentConfig, expand_matrix
 from chunklab.core.runner.run import ComboResult, RunResult, run_experiment, validate_questions
@@ -18,5 +19,6 @@ __all__ = [
     "format_table",
     "parse_thresholds",
     "run_experiment",
+    "unmatched_combos",
     "validate_questions",
 ]

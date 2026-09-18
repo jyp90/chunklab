@@ -92,9 +92,7 @@ def test_resolve_documents_supports_recursive_globs(tmp_path: Path):
     nested.mkdir(parents=True)
     (nested / "c.md").write_text("c")
     (tmp_path / "docs" / "a.md").write_text("a")
-    cfg = ExperimentConfig(
-        documents=["docs/**/*.md"], questions="q", chunkers=[], embedders=[]
-    )
+    cfg = ExperimentConfig(documents=["docs/**/*.md"], questions="q", chunkers=[], embedders=[])
     assert [p.name for p in cfg.resolve_documents(tmp_path)] == ["a.md", "c.md"]
 
 

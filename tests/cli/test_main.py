@@ -82,6 +82,19 @@ def test_run_baseline_regression_exits_1(tmp_path: Path, sample_doc_path: Path):
     assert "dropped" in r2.output
 
 
+def test_run_notes_combos_missing_from_baseline(tmp_path: Path, sample_doc_path: Path):
+    ws = _workspace(tmp_path, sample_doc_path)
+    r1 = runner.invoke(app, ["run", str(ws / "exp.yaml"), "--out", str(ws / "base.json")])
+    assert r1.exit_code == 0, r1.output
+    exp = ws / "exp.yaml"
+    exp.write_text(
+        exp.read_text().replace("  - name: markdown", "  - name: markdown\n  - name: recursive")
+    )
+    r2 = runner.invoke(app, ["run", str(ws / "exp.yaml"), "--baseline", str(ws / "base.json")])
+    assert r2.exit_code == 0, r2.output
+    assert "note: 1 combo(s) not in baseline, skipped: recursive(" in r2.output
+
+
 def test_generate_questions_with_fake_llm(tmp_path: Path, sample_doc_path: Path):
     out = tmp_path / "q.json"
     r = runner.invoke(

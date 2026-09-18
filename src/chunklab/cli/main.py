@@ -16,6 +16,7 @@ from chunklab.core.runner import (
     format_table,
     parse_thresholds,
     run_experiment,
+    unmatched_combos,
 )
 from chunklab.core.text import load_documents
 
@@ -63,7 +64,12 @@ def run(
         typer.echo(f"\nERROR: {e}", err=True)
         raise typer.Exit(code=2) from None
     if baseline is not None:
-        violations += check_regression(result, RunResult.from_json(baseline), max_drop)
+        base = RunResult.from_json(baseline)
+        missing = unmatched_combos(result, base)
+        if missing:
+            shown = ", ".join(missing[:3]) + ("…" if len(missing) > 3 else "")
+            typer.echo(f"note: {len(missing)} combo(s) not in baseline, skipped: {shown}", err=True)
+        violations += check_regression(result, base, max_drop)
     if violations:
         typer.echo("\nFAILED:", err=True)
         for v in violations:
