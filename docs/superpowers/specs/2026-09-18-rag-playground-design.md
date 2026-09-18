@@ -71,8 +71,8 @@ hit@k/MRR/NDCG 전부 ground truth 필수. 수동 라벨링 30분은 Show HN 유
 ┌─ upload docs ──────────────────────┐
 │ query: "what is the refund policy" │
 ├──────────┬──────────┬──────────────┤
-│ recursive│ semantic │ sentence     │
-│ 512/50   │ chunker  │ window       │
+│ recursive│ markdown │ sentence     │
+│ 512/50   │ -aware   │ window       │
 ├──────────┼──────────┼──────────────┤
 │ hit@5 ✓  │ hit@5 ✓  │ hit@5 ✗      │
 │ 0.82     │ 0.91     │ 0.64         │
@@ -97,7 +97,7 @@ hit@k/MRR/NDCG 전부 ground truth 필수. 수동 라벨링 30분은 Show HN 유
 ```
 chunklab/
 ├── core/          # 청킹·임베딩·검색·메트릭 엔진 (UI 무관, 라이브러리로도 사용 가능)
-│   ├── chunkers/    # 청커 4종, 공통 인터페이스: chunk(doc) -> list[Chunk]
+│   ├── chunkers/    # 청커 3종(v1), 공통 인터페이스: chunk(doc) -> list[Chunk]
 │   ├── embedders/   # 임베딩 3계열, 공통 인터페이스: embed(texts) -> ndarray
 │   ├── retrieval/   # dense / bm25 / hybrid 검색
 │   ├── metrics/     # hit@k, MRR, NDCG
