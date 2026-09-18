@@ -74,3 +74,25 @@ def test_invalid_yaml_missing_required(tmp_path: Path):
     p.write_text("documents: []\n")
     with pytest.raises(ValueError):
         ExperimentConfig.from_yaml(p)
+
+
+def test_resolve_documents_accepts_absolute_patterns(tmp_path: Path):
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "a.md").write_text("a")
+    (tmp_path / "docs" / "b.md").write_text("b")
+    cfg = ExperimentConfig(
+        documents=[str(tmp_path / "docs" / "*.md")], questions="q", chunkers=[], embedders=[]
+    )
+    paths = cfg.resolve_documents(tmp_path / "elsewhere")
+    assert [p.name for p in paths] == ["a.md", "b.md"]
+
+
+def test_resolve_documents_supports_recursive_globs(tmp_path: Path):
+    nested = tmp_path / "docs" / "deep"
+    nested.mkdir(parents=True)
+    (nested / "c.md").write_text("c")
+    (tmp_path / "docs" / "a.md").write_text("a")
+    cfg = ExperimentConfig(
+        documents=["docs/**/*.md"], questions="q", chunkers=[], embedders=[]
+    )
+    assert [p.name for p in cfg.resolve_documents(tmp_path)] == ["a.md", "c.md"]

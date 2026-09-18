@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import glob
 import itertools
 from dataclasses import dataclass
 from pathlib import Path
@@ -36,7 +37,10 @@ class ExperimentConfig(BaseModel):
     def resolve_documents(self, base_dir: Path) -> list[Path]:
         found: set[Path] = set()
         for pattern in self.documents:
-            for p in Path(base_dir).glob(pattern):
+            # `Path(base) / pattern` keeps an absolute pattern unchanged; glob.glob
+            # (unlike Path.glob) accepts absolute patterns.
+            for hit in glob.glob(str(Path(base_dir) / pattern), recursive=True):
+                p = Path(hit)
                 if p.is_file():
                     found.add(p.resolve())
         return sorted(found)
