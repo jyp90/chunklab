@@ -65,7 +65,13 @@ class RunResult:
 
 def validate_questions(questions: Sequence[Question], docs: Sequence[Document]) -> None:
     lengths = {d.id: len(d.text) for d in docs}
+    seen: set[str] = set()
     for q in questions:
+        if q.id in seen:
+            raise ValueError(f"duplicate question id '{q.id}'")
+        seen.add(q.id)
+        if not q.spans:
+            raise ValueError(f"question '{q.id}' has no spans")
         for s in q.spans:
             if s.doc_id not in lengths:
                 raise ValueError(f"question '{q.id}' references unknown doc_id '{s.doc_id}'")

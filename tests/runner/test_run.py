@@ -120,6 +120,19 @@ def test_validate_questions_rejects_unknown_doc_and_out_of_range(sample_doc_path
         validate_questions([Question("q", "t", (Span("sample", 0, 10_000),))], [doc])
 
 
+def test_validate_questions_rejects_question_without_spans(sample_doc_path: Path):
+    doc = load_document(sample_doc_path)
+    with pytest.raises(ValueError, match="question 'q-empty' has no spans"):
+        validate_questions([Question("q-empty", "t", ())], [doc])
+
+
+def test_validate_questions_rejects_duplicate_ids(sample_doc_path: Path):
+    doc = load_document(sample_doc_path)
+    q = Question("dup", "t", (Span("sample", 0, 5),))
+    with pytest.raises(ValueError, match="duplicate question id 'dup'"):
+        validate_questions([q, q], [doc])
+
+
 def test_relative_cache_path_resolves_against_config_dir(workspace: Path, tmp_path, monkeypatch):
     exp = workspace / "exp.yaml"
     exp.write_text(
