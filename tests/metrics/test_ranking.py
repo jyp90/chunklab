@@ -92,3 +92,14 @@ def test_mean_metrics_empty():
         "precision": 0.0,
         "iou": 0.0,
     }
+
+
+def test_ndcg_overlapping_chunks_do_not_exceed_one():
+    ranked = [_c(0, 300), _c(50, 250), _c(90, 210)]
+    assert ndcg_at_k(ranked, GOLD, k=3) == pytest.approx(1.0)
+
+
+def test_ndcg_marginal_gain_two_partial_chunks():
+    ranked = [_c(100, 150), _c(150, 200)]
+    expected = 0.5 + 0.5 / math.log2(3)
+    assert ndcg_at_k(ranked, GOLD, k=2) == pytest.approx(expected)

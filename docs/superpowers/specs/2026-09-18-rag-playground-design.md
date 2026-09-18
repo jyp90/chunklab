@@ -49,7 +49,7 @@
 ### 2.1 정답 판정과 메트릭 정의
 - **hit 판정**: 검색된 청크가 span의 X% 이상을 포함하면 hit (기본 X=50, 설정 가능). 기준을 청크가 아닌 span에 두어 큰 청크가 자동으로 이득 보지 않게 함
 - **hit@k / MRR**: 위 hit 정의 사용
-- **NDCG**: graded relevance = span overlap 비율 (binary보다 정보량 많음)
+- **NDCG**: 청크별 gain = 해당 청크가 **새로 ** 덮는 정답 span 비율(앞 순위 청크가 이미 덮은 부분은 제외, span별 marginal coverage 합). IDCG = min(정답 span 수, k)개 슬롯에 gain 1.0. 겹치는 청크가 같은 정답을 반복 커버해도 점수가 늘지 않음 (NDCG ≤ 1)
 - **IoU / precision**: 검색된 총 토큰 중 정답 토큰 비율 (Chroma 방식). 이게 없으면 chunk size 2048이 항상 이겨 도구가 "큰 청크 쓰세요"라는 뻔한 답만 냄
 - 기각한 정답 모델: 기준 청킹의 청크 ID(기준 청커 편향), free-form 정답 텍스트 fuzzy match(판정 흐릿)
 

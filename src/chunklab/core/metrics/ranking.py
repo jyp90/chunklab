@@ -4,7 +4,7 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from chunklab.core.metrics.overlap import best_coverage, is_hit
+from chunklab.core.metrics.overlap import is_hit
 from chunklab.core.models import Chunk, Span
 
 
@@ -31,11 +31,21 @@ def reciprocal_rank(
 
 
 def ndcg_at_k(chunks: Sequence[Chunk], golds: Sequence[Span], k: int) -> float:
+    """NDCG with marginal gain: a chunk only earns credit for gold characters that
+    no higher-ranked chunk already covered, so overlapping chunks cannot push the
+    score above 1.0."""
     if not golds:
         return 0.0
-    dcg = sum(
-        best_coverage(c, golds) / math.log2(rank + 1) for rank, c in enumerate(chunks[:k], start=1)
-    )
+    covered: set[tuple[str, int]] = set()
+    dcg = 0.0
+    for rank, c in enumerate(chunks[:k], start=1):
+        chunk_pos = _positions([c.span])
+        gain = 0.0
+        for g in golds:
+            new = (chunk_pos & _positions([g])) - covered
+            gain += len(new) / g.length
+            covered |= new
+        dcg += gain / math.log2(rank + 1)
     ideal_slots = min(len(golds), k)
     idcg = sum(1.0 / math.log2(rank + 1) for rank in range(1, ideal_slots + 1))
     return dcg / idcg if idcg else 0.0
