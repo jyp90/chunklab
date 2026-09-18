@@ -65,6 +65,8 @@ class CachedEmbedder:
         self.misses = 0
 
     def embed(self, texts: list[str]) -> np.ndarray:
+        if not texts:
+            return np.zeros((0, 0), dtype=np.float32)
         keys = [cache_key(self.name, t) for t in texts]
         found = self._cache.get_many(list(dict.fromkeys(keys)))
         missing_texts: dict[str, str] = {}
@@ -77,7 +79,4 @@ class CachedEmbedder:
             new = dict(zip(missing_texts.keys(), vecs, strict=True))
             self._cache.put_many(new)
             found.update(new)
-        if not texts:
-            probe = self._inner.embed([])
-            return np.zeros((0, probe.shape[1]), dtype=np.float32)
         return np.stack([found[k] for k in keys]).astype(np.float32)

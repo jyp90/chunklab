@@ -21,8 +21,11 @@ chunklab run exp.yaml
 You get a table like:
 
 ```
-combo                                                    hit@3        mrr       ndcg  precision        iou
-recursive(chunk_size=128,overlap=0)|fake|k=3|hybrid=False  0.800      0.700      0.712      0.412      0.398
+combo                                                           hit@3        mrr       ndcg  precision        iou
+-----------------------------------------------------------------------------------------------------------------
+recursive(chunk_size=128,overlap=0)|fake|k=3|hybrid=False       0.800      0.800      0.800      0.206      0.206
+recursive(chunk_size=128,overlap=0)|fake|k=3|hybrid=True        0.800      0.800      0.800      0.201      0.201
+recursive(chunk_size=128,overlap=32)|fake|k=3|hybrid=False      1.000      0.867      0.900      0.235      0.235
 ...
 ```
 
