@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import functools
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, TypeVar, cast
 
 import typer
+import yaml
 
 import chunklab
+from chunklab.core.embedders import MissingApiKeyError
 from chunklab.core.questions import build_llm, generate_questions, save_questions
 from chunklab.core.runner import (
     ExperimentConfig,
@@ -20,7 +24,44 @@ from chunklab.core.runner import (
 )
 from chunklab.core.text import load_documents
 
-app = typer.Typer(help="Benchmark your chunking before you ship it.", no_args_is_help=True)
+app = typer.Typer(
+    help="Benchmark your chunking before you ship it.",
+    no_args_is_help=True,
+    pretty_exceptions_enable=False,
+)
+
+# Exit 2 means "you asked for something impossible": bad config, bad flag, missing
+# file, missing credentials. Exit 1 is reserved for a run that completed but failed
+# a threshold or regression check. Anything else is a bug and keeps its traceback.
+_USER_ERRORS = (
+    MissingApiKeyError,
+    ValueError,
+    KeyError,
+    FileNotFoundError,
+    ImportError,
+    yaml.YAMLError,
+)
+
+_F = TypeVar("_F", bound=Callable[..., None])
+
+
+def _clean(e: Exception) -> str:
+    # str(KeyError("x")) is repr'd as "'x'"; every other exception reads fine.
+    if isinstance(e, KeyError) and e.args:
+        return str(e.args[0])
+    return str(e)
+
+
+def _user_errors(fn: _F) -> _F:
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except _USER_ERRORS as e:
+            typer.echo(f"error: {_clean(e)}", err=True)
+            raise typer.Exit(code=2) from None
+
+    return cast(_F, wrapper)
 
 
 @app.command()
@@ -29,6 +70,7 @@ def version() -> None:
 
 
 @app.command()
+@_user_errors
 def run(
     config: Annotated[Path, typer.Argument(exists=True, dir_okay=False, help="Experiment YAML")],
     out: Annotated[Path | None, typer.Option("--out", help="Result JSON path")] = None,
@@ -61,11 +103,7 @@ def run(
     typer.echo(f"\nembeddings: {misses} computed, {lookups - misses} served from cache")
     typer.echo(f"saved: {out}")
 
-    try:
-        violations = check_thresholds(result, thresholds)
-    except ValueError as e:
-        typer.echo(f"\nERROR: {e}", err=True)
-        raise typer.Exit(code=2) from None
+    violations = check_thresholds(result, thresholds)
     if baseline is not None:
         base = RunResult.from_json(baseline)
         missing = unmatched_combos(result, base)
@@ -82,6 +120,7 @@ def run(
 
 
 @app.command("generate-questions")
+@_user_errors
 def generate_questions_cmd(
     paths: Annotated[list[Path], typer.Argument(exists=True, dir_okay=False)],
     out: Annotated[Path, typer.Option("--out")],

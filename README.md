@@ -49,7 +49,14 @@ recursive(chunk_size=128,overlap=32)|fake|k=3|hybrid=False      1.000      0.867
 ```bash
 chunklab run exp.yaml --baseline last-good.json --max-drop 0.05 --fail-below hit@5=0.8
 ```
-Exit code 1 if any combination fails a threshold or regresses beyond `--max-drop` versus the baseline.
+Exit codes:
+
+| code | meaning |
+| ---- | ------- |
+| 0 | every combination ran and passed the checks |
+| 1 | the run completed but a combination failed a threshold or regressed beyond `--max-drop` |
+| 2 | usage or configuration error — bad flag, invalid YAML, missing file, unknown provider, missing API key |
+
 `hit@k` keys are per-combo, so a `top_k: [3, 5]` grid needs `--fail-below hit@3=… --fail-below hit@5=…`; a metric name no combo produces is an error (exit code 2).
 
 ## Experiment config

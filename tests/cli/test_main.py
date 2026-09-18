@@ -96,6 +96,81 @@ def test_run_notes_combos_missing_from_baseline(tmp_path: Path, sample_doc_path:
     assert "note: 1 combo(s) not in baseline, skipped: recursive(" in r2.output
 
 
+def test_run_missing_questions_file_exits_2(tmp_path: Path, sample_doc_path: Path):
+    ws = _workspace(tmp_path, sample_doc_path)
+    (ws / "questions.json").unlink()
+    r = runner.invoke(app, ["run", str(ws / "exp.yaml")])
+    assert r.exit_code == 2, r.output
+    assert "error:" in r.output
+    assert "questions.json" in r.output
+    assert "Traceback" not in r.output
+
+
+def test_run_bad_fail_below_expression_exits_2(tmp_path: Path, sample_doc_path: Path):
+    ws = _workspace(tmp_path, sample_doc_path)
+    r = runner.invoke(app, ["run", str(ws / "exp.yaml"), "--fail-below", "hit@3"])
+    assert r.exit_code == 2, r.output
+    assert "METRIC=VALUE" in r.output
+    assert "Traceback" not in r.output
+
+
+def test_run_unknown_embedder_exits_2(tmp_path: Path, sample_doc_path: Path):
+    ws = _workspace(tmp_path, sample_doc_path)
+    exp = ws / "exp.yaml"
+    exp.write_text(exp.read_text().replace('embedders: ["fake"]', 'embedders: ["cohere"]'))
+    r = runner.invoke(app, ["run", str(exp)])
+    assert r.exit_code == 2, r.output
+    assert "unknown embedder provider 'cohere'" in r.output
+    assert "Traceback" not in r.output
+    assert '"unknown' not in r.output  # KeyError quoting stripped
+
+
+def test_run_invalid_yaml_exits_2(tmp_path: Path):
+    exp = tmp_path / "exp.yaml"
+    exp.write_text("documents: [docs/*.md\nchunkers: :\n")
+    r = runner.invoke(app, ["run", str(exp)])
+    assert r.exit_code == 2, r.output
+    assert "error:" in r.output
+    assert "Traceback" not in r.output
+
+
+def test_generate_questions_unknown_llm_exits_2(tmp_path: Path, sample_doc_path: Path):
+    r = runner.invoke(
+        app,
+        [
+            "generate-questions",
+            str(sample_doc_path),
+            "--out",
+            str(tmp_path / "q.json"),
+            "--llm",
+            "anthropic",
+        ],
+    )
+    assert r.exit_code == 2, r.output
+    assert "unknown llm provider 'anthropic'" in r.output
+    assert "Traceback" not in r.output
+
+
+def test_generate_questions_missing_api_key_exits_2(
+    tmp_path: Path, sample_doc_path: Path, monkeypatch
+):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    r = runner.invoke(
+        app,
+        [
+            "generate-questions",
+            str(sample_doc_path),
+            "--out",
+            str(tmp_path / "q.json"),
+            "--min-len",
+            "50",
+        ],
+    )
+    assert r.exit_code == 2, r.output
+    assert "error: OPENAI_API_KEY is not set" in r.output
+    assert "Traceback" not in r.output
+
+
 def test_generate_questions_with_fake_llm(tmp_path: Path, sample_doc_path: Path):
     out = tmp_path / "q.json"
     r = runner.invoke(

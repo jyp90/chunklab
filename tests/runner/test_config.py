@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from chunklab.core.runner.config import Combo, ChunkerGrid, ExperimentConfig, expand_matrix
+from chunklab.core.runner.config import ChunkerGrid, Combo, ExperimentConfig, expand_matrix
 
 YAML = """
 documents: ["docs/*.md"]
