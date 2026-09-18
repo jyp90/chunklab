@@ -36,9 +36,23 @@ def test_check_thresholds_reports_violations_and_errors():
     assert v == ["b: hit@5 0.500 < 0.800", "c: failed (RuntimeError: x)"]
 
 
-def test_check_thresholds_skips_missing_metric_keys():
+def test_check_thresholds_raises_when_metric_absent_everywhere():
     res = _result(_combo("a", **{"hit@3": 0.1}))
-    assert check_thresholds(res, {"hit@5": 0.8}) == []
+    with pytest.raises(ValueError, match="hit@5"):
+        check_thresholds(res, {"hit@5": 0.8})
+
+
+def test_check_thresholds_skips_combo_lacking_key_when_others_have_it():
+    res = _result(_combo("a", **{"hit@3": 0.1}), _combo("b", **{"hit@5": 0.5}))
+    assert check_thresholds(res, {"hit@5": 0.8}) == ["b: hit@5 0.500 < 0.800"]
+
+
+def test_check_regression_flags_baseline_with_no_shared_combo_ids():
+    base = _result(_combo("a", **{"hit@5": 0.9}))
+    cur = _result(_combo("z", **{"hit@5": 0.9}))
+    assert check_regression(cur, base, max_drop=0.05) == [
+        "baseline shares no combo ids with this run (grid or embedder changed?)"
+    ]
 
 
 def test_check_regression_flags_drops_beyond_max_drop():

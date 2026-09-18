@@ -52,7 +52,11 @@ def run(
     typer.echo(format_table(result))
     typer.echo(f"\nsaved: {out}")
 
-    violations = check_thresholds(result, thresholds)
+    try:
+        violations = check_thresholds(result, thresholds)
+    except ValueError as e:
+        typer.echo(f"\nERROR: {e}", err=True)
+        raise typer.Exit(code=2) from None
     if baseline is not None:
         violations += check_regression(result, RunResult.from_json(baseline), max_drop)
     if violations:

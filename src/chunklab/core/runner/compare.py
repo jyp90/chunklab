@@ -29,6 +29,13 @@ def check_thresholds(result: RunResult, thresholds: dict[str, float]) -> list[st
         for metric, minimum in thresholds.items():
             if metric in c.metrics and c.metrics[metric] < minimum:
                 violations.append(f"{c.combo_id}: {metric} {c.metrics[metric]:.3f} < {minimum:.3f}")
+    produced = {m for c in result.combos if not c.error for m in c.metrics}
+    unseen = set(thresholds) - produced
+    if unseen and produced:
+        raise ValueError(
+            f"--fail-below metric(s) not produced by this run: {sorted(unseen)}; "
+            f"available: {sorted(produced)}"
+        )
     return violations
 
 
@@ -46,6 +53,9 @@ def check_regression(result: RunResult, baseline: RunResult, max_drop: float) ->
                     f"{c.combo_id}: {metric} dropped {prev:.3f} -> {cur:.3f} "
                     f"(max drop {max_drop:.3f})"
                 )
+    matched = [c for c in result.combos if c.combo_id in base_by_id]
+    if result.combos and not matched:
+        violations.append("baseline shares no combo ids with this run (grid or embedder changed?)")
     return violations
 
 

@@ -47,6 +47,7 @@ recursive(chunk_size=128,overlap=0)|fake|k=3|hybrid=False  0.800      0.700     
 chunklab run exp.yaml --baseline last-good.json --max-drop 0.05 --fail-below hit@5=0.8
 ```
 Exit code 1 if any combination fails a threshold or regresses beyond `--max-drop` versus the baseline.
+`hit@k` keys are per-combo, so a `top_k: [3, 5]` grid needs `--fail-below hit@3=… --fail-below hit@5=…`; a metric name no combo produces is an error (exit code 2).
 
 ## Experiment config
 
@@ -77,7 +78,7 @@ cache_path: ~/.chunklab/cache.db   # embeddings cached by (model, text)
 
 - `sentence_window` embeds the whole window (v1 simplification).
 - The `fake` embedder is a deterministic hashed bag-of-words — fine for demos and CI smoke tests, not for real decisions.
-- API keys are read from `OPENAI_API_KEY` / `GEMINI_API_KEY` only.
+- API keys are read from `OPENAI_API_KEY` and `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) only.
 
 ## License
 

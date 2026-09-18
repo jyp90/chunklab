@@ -8,12 +8,7 @@ from chunklab.core.models import Question, Span
 from chunklab.core.questions.io import load_questions, save_questions
 from chunklab.core.text import load_document
 
-# Click 8.2+ dropped CliRunner(mix_stderr=...); stdout/stderr are combined into
-# `result.output` by default. Older Click needs mix_stderr=True for the same effect.
-try:
-    runner = CliRunner(mix_stderr=True)
-except TypeError:
-    runner = CliRunner()
+runner = CliRunner()
 
 
 def _workspace(tmp_path: Path, sample_doc_path: Path) -> Path:
@@ -60,7 +55,14 @@ def test_run_fail_below_exits_1(tmp_path: Path, sample_doc_path: Path):
     ws = _workspace(tmp_path, sample_doc_path)
     r = runner.invoke(app, ["run", str(ws / "exp.yaml"), "--fail-below", "hit@3=1.5"])
     assert r.exit_code == 1
-    assert "hit@3" in r.output
+    assert "FAILED" in r.output and "hit@3 " in r.output and "< 1.500" in r.output
+
+
+def test_run_fail_below_unknown_metric_exits_2(tmp_path: Path, sample_doc_path: Path):
+    ws = _workspace(tmp_path, sample_doc_path)
+    r = runner.invoke(app, ["run", str(ws / "exp.yaml"), "--fail-below", "hit@9=0.5"])
+    assert r.exit_code == 2
+    assert "hit@9" in r.output
 
 
 def test_run_baseline_regression_exits_1(tmp_path: Path, sample_doc_path: Path):
