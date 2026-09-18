@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "questions": [
+    {
+      "id": "refund-window",
+      "text": "How long do customers have to request a refund?",
+      "spans": [
+        {
+          "doc_id": "refund-policy",
+          "start": 17,
+          "end": 126
+        }
+      ]
+    },
+    {
+      "id": "digital-goods",
+      "text": "Can I get a refund on downloaded digital goods?",
+      "spans": [
+        {
+          "doc_id": "refund-policy",
+          "start": 127,
+          "end": 176
+        }
+      ]
+    },
+    {
+      "id": "defective",
+      "text": "What happens if the product is defective?",
+      "spans": [
+        {
+          "doc_id": "refund-policy",
+          "start": 193,
+          "end": 297
+        }
+      ]
+    },
+    {
+      "id": "intl-shipping",
+      "text": "How long does international shipping take?",
+      "spans": [
+        {
+          "doc_id": "refund-policy",
+          "start": 347,
+          "end": 389
+        }
+      ]
+    },
+    {
+      "id": "lost-package",
+      "text": "Package says delivered but I never got it, what do I do?",
+      "spans": [
+        {
+          "doc_id": "refund-policy",
+          "start": 477,
+          "end": 578
+        }
+      ]
+    }
+  ]
+}

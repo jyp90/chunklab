@@ -20,7 +20,9 @@ class LocalEmbedder:
     def _load(self):
         if self._model is None:
             try:
-                from sentence_transformers import SentenceTransformer  # lazy import
+                from sentence_transformers import (  # ty: ignore[unresolved-import]
+                    SentenceTransformer,  # lazy import
+                )
             except ImportError as e:
                 raise ImportError(
                     "sentence-transformers is not installed. "

@@ -1,0 +1,17 @@
+# Runs offline with the deterministic "fake" embedder.
+# Swap in "openai:text-embedding-3-small" or "gemini:gemini-embedding-001" once you set an API key.
+documents: ["docs/*.md"]
+questions: questions.json
+chunkers:
+  - name: recursive
+    params: {chunk_size: [128, 256], overlap: [0, 32]}
+  - name: sentence_window
+    params: {window: [1, 2]}
+  - name: markdown
+    params: {chunk_size: [512]}
+embedders: ["fake"]
+retrieval:
+  top_k: [3]
+  hybrid: [false, true]
+hit_threshold: 0.5
+cache_path: ".chunklab-cache.db"
