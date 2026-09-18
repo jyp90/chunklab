@@ -41,18 +41,22 @@ def test_load_txt(tmp_path: Path):
     assert doc.text == "hello\nworld\n"
 
 
-def test_load_pdf(tmp_path: Path):
-    import fitz
+def test_load_pdf(tmp_path: Path, capsys):
+    import pymupdf
 
     p = tmp_path / "doc.pdf"
-    pdf = fitz.open()
+    pdf = pymupdf.open()
     page = pdf.new_page()
     page.insert_text((72, 72), "Refunds within 30 days.")
     pdf.save(p)
     pdf.close()
+    capsys.readouterr()
 
     doc = load_document(p)
     assert "Refunds within 30 days." in doc.text
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == ""
 
 
 def test_unsupported_format(tmp_path: Path):

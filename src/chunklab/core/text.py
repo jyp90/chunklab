@@ -27,9 +27,9 @@ def normalize(text: str) -> str:
 
 
 def _read_pdf(path: Path) -> str:
-    import fitz  # pymupdf; lazy import
+    import pymupdf  # lazy import
 
-    with fitz.open(path) as pdf:
+    with pymupdf.open(path) as pdf:
         return "\n\n".join(page.get_text() for page in pdf)
 
 
