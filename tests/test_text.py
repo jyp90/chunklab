@@ -1,0 +1,82 @@
+from pathlib import Path
+
+import pytest
+
+from chunklab.core.text import (
+    MAX_DOCUMENT_BYTES,
+    DocumentTooLargeError,
+    UnsupportedFormatError,
+    load_document,
+    load_documents,
+    normalize,
+)
+
+
+def test_normalize_line_endings_and_blank_lines():
+    raw = "a\r\nb\r\n\r\n\r\n\r\nc  \n"
+    assert normalize(raw) == "a\nb\n\nc\n"
+
+
+def test_normalize_strips_trailing_whitespace_per_line():
+    assert normalize("x   \ny\t\n") == "x\ny\n"
+
+
+def test_normalize_ensures_single_trailing_newline():
+    assert normalize("abc") == "abc\n"
+    assert normalize("abc\n\n\n") == "abc\n"
+
+
+def test_load_markdown(sample_doc_path: Path):
+    doc = load_document(sample_doc_path)
+    assert doc.id == "sample"
+    assert doc.text.startswith("# Refund Policy\n")
+    assert doc.source == str(sample_doc_path.resolve())
+
+
+def test_load_txt(tmp_path: Path):
+    p = tmp_path / "notes.txt"
+    p.write_text("hello\r\nworld", encoding="utf-8")
+    doc = load_document(p)
+    assert doc.id == "notes"
+    assert doc.text == "hello\nworld\n"
+
+
+def test_load_pdf(tmp_path: Path):
+    import fitz
+
+    p = tmp_path / "doc.pdf"
+    pdf = fitz.open()
+    page = pdf.new_page()
+    page.insert_text((72, 72), "Refunds within 30 days.")
+    pdf.save(p)
+    pdf.close()
+
+    doc = load_document(p)
+    assert "Refunds within 30 days." in doc.text
+
+
+def test_unsupported_format(tmp_path: Path):
+    p = tmp_path / "x.docx"
+    p.write_bytes(b"")
+    with pytest.raises(UnsupportedFormatError):
+        load_document(p)
+
+
+def test_rejects_oversized_document(tmp_path: Path, monkeypatch):
+    import chunklab.core.text as text_mod
+
+    monkeypatch.setattr(text_mod, "MAX_DOCUMENT_BYTES", 10)
+    p = tmp_path / "big.txt"
+    p.write_text("x" * 11)
+    with pytest.raises(DocumentTooLargeError, match="10 bytes"):
+        load_document(p)
+    assert MAX_DOCUMENT_BYTES == 10 * 1024 * 1024
+
+
+def test_load_documents_rejects_duplicate_ids(tmp_path: Path):
+    (tmp_path / "a").mkdir()
+    (tmp_path / "b").mkdir()
+    (tmp_path / "a" / "same.md").write_text("one")
+    (tmp_path / "b" / "same.md").write_text("two")
+    with pytest.raises(ValueError, match="duplicate document id"):
+        load_documents([tmp_path / "a" / "same.md", tmp_path / "b" / "same.md"])
