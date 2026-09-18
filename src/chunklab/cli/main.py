@@ -56,7 +56,10 @@ def run(
     )
     result.to_json(out)
     typer.echo(format_table(result))
-    typer.echo(f"\nsaved: {out}")
+    misses = sum(c.embed_misses for c in result.combos)
+    lookups = sum(c.embed_lookups for c in result.combos)
+    typer.echo(f"\nembeddings: {misses} computed, {lookups - misses} served from cache")
+    typer.echo(f"saved: {out}")
 
     try:
         violations = check_thresholds(result, thresholds)

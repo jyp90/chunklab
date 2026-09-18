@@ -47,6 +47,7 @@ def test_run_writes_result_and_prints_table(tmp_path: Path, sample_doc_path: Pat
     r = runner.invoke(app, ["run", str(ws / "exp.yaml")])
     assert r.exit_code == 0, r.output
     assert "hit@3" in r.stdout
+    assert "embeddings: " in r.stdout and "served from cache" in r.stdout
     data = json.loads((ws / "result.json").read_text())
     assert len(data["combos"]) == 1
 

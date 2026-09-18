@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import uuid
 from collections.abc import Callable, Sequence
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -31,6 +31,8 @@ class ComboResult:
     n_chunks: int = 0
     per_question: list[dict[str, Any]] = field(default_factory=list)
     error: str | None = None
+    embed_misses: int = 0
+    embed_lookups: int = 0
 
 
 @dataclass
@@ -55,11 +57,14 @@ class RunResult:
     @classmethod
     def from_json(cls, path: Path) -> RunResult:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
+        known = {f.name for f in fields(ComboResult)}
         return cls(
             run_id=data["run_id"],
             created_at=data["created_at"],
             config=data["config"],
-            combos=[ComboResult(**c) for c in data["combos"]],
+            combos=[
+                ComboResult(**{k: v for k, v in c.items() if k in known}) for c in data["combos"]
+            ],
         )
 
 
@@ -162,15 +167,14 @@ def run_experiment(
                 key = (combo.chunker, combo.chunker_params)
                 if key not in chunk_cache:
                     chunk_cache[key] = _chunk_all(combo, docs)
-                results.append(
-                    _run_combo(
-                        combo,
-                        chunk_cache[key],
-                        questions,
-                        embedders[combo.embedder],
-                        cfg.hit_threshold,
-                    )
+                embedder = embedders[combo.embedder]
+                before = (embedder.misses, embedder.lookups)
+                combo_result = _run_combo(
+                    combo, chunk_cache[key], questions, embedder, cfg.hit_threshold
                 )
+                combo_result.embed_misses = embedder.misses - before[0]
+                combo_result.embed_lookups = embedder.lookups - before[1]
+                results.append(combo_result)
             except Exception as e:  # noqa: BLE001 - partial failure is a feature
                 results.append(
                     ComboResult(

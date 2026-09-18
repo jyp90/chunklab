@@ -84,6 +84,41 @@ def test_run_result_json_roundtrip(workspace: Path):
     assert loaded.combos[0].metrics == result.combos[0].metrics
 
 
+def test_run_result_from_json_tolerates_missing_optional_fields(tmp_path: Path):
+    payload = {
+        "run_id": "r",
+        "created_at": "2026-01-01T00:00:00+00:00",
+        "config": {},
+        "combos": [
+            {
+                "combo_id": "a",
+                "chunker": "recursive",
+                "chunker_params": {},
+                "embedder": "fake",
+                "top_k": 5,
+                "hybrid": False,
+                "metrics": {"hit@5": 0.5},
+                "unknown_future_field": 1,
+            }
+        ],
+    }
+    p = tmp_path / "old.json"
+    p.write_text(json.dumps(payload))
+    loaded = RunResult.from_json(p)
+    assert loaded.combos[0].embed_misses == 0
+    assert loaded.combos[0].embed_lookups == 0
+    assert loaded.combos[0].metrics == {"hit@5": 0.5}
+
+
+def test_second_run_serves_every_combo_from_the_cache(workspace: Path):
+    cfg = ExperimentConfig.from_yaml(workspace / "exp.yaml")
+    first = run_experiment(cfg, workspace)
+    assert any(c.embed_misses > 0 for c in first.combos)
+    second = run_experiment(cfg, workspace)
+    assert all(c.embed_misses == 0 for c in second.combos)
+    assert all(c.embed_lookups > 0 for c in second.combos)
+
+
 def test_partial_failure_is_isolated(workspace: Path):
     cfg = ExperimentConfig.from_yaml(workspace / "exp.yaml")
     cfg = cfg.model_copy(update={"embedders": ["fake", "boom"]})

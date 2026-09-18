@@ -63,10 +63,12 @@ class CachedEmbedder:
         self._cache = cache
         self.name = inner.name
         self.misses = 0
+        self.lookups = 0
 
     def embed(self, texts: list[str]) -> np.ndarray:
         if not texts:
             return np.zeros((0, 0), dtype=np.float32)
+        self.lookups += len(texts)
         keys = [cache_key(self.name, t) for t in texts]
         found = self._cache.get_many(list(dict.fromkeys(keys)))
         missing_texts: dict[str, str] = {}

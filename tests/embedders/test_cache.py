@@ -43,6 +43,18 @@ def test_cached_embedder_only_calls_inner_for_misses(tmp_path: Path):
         assert second.shape == (3, 16)
 
 
+def test_cached_embedder_counts_lookups(tmp_path: Path):
+    with EmbeddingCache(tmp_path / "c.db") as cache:
+        ce = CachedEmbedder(FakeEmbedder(dim=4), cache)
+        assert ce.lookups == 0
+        ce.embed(["a", "b"])
+        assert (ce.lookups, ce.misses) == (2, 2)
+        ce.embed(["a", "b", "c"])
+        assert (ce.lookups, ce.misses) == (5, 3)
+        ce.embed([])
+        assert ce.lookups == 5
+
+
 def test_cached_embedder_preserves_order_and_duplicates(tmp_path: Path):
     inner = FakeEmbedder(dim=8)
     with EmbeddingCache(tmp_path / "c.db") as cache:
