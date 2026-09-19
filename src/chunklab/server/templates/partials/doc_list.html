@@ -1,0 +1,12 @@
+{% if skipped %}<div class="error">{% for s in skipped %}<div>skipped {{ s }}</div>{% endfor %}</div>{% endif %}
+<ul class="plain">
+{% for d in documents %}
+  <li>
+    <a href="#" hx-get="/documents/{{ d.id }}/view" hx-target="#doc-view">{{ d.name }}</a>
+    <span class="muted">{{ d.n_chars }} chars · {{ d.n_questions }} q</span>
+    <button hx-delete="/documents/{{ d.id }}" hx-target="#doc-list" hx-confirm="Delete {{ d.name }} and its questions?">×</button>
+  </li>
+{% else %}
+  <li class="muted">No documents yet.</li>
+{% endfor %}
+</ul>

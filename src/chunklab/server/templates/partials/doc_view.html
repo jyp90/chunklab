@@ -1,0 +1,3 @@
+<h3>{{ doc.id }} <span class="muted">{{ doc.text|length }} chars</span></h3>
+{% if html %}<pre id="doc" data-doc-id="{{ doc.id }}">{{ html|safe }}</pre>
+{% else %}<pre id="doc" data-doc-id="{{ doc.id }}">{{ doc.text }}</pre>{% endif %}

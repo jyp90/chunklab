@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+  <div class="col-narrow">
+    <form hx-post="/documents" hx-target="#doc-list" hx-encoding="multipart/form-data">
+      <input type="file" name="files" multiple accept=".md,.txt,.markdown,.pdf">
+      <button class="primary" type="submit">Upload</button>
+    </form>
+    <div id="doc-list">{% include "partials/doc_list.html" %}</div>
+    <hr>
+    <div id="question-panel">{% include "partials/question_list.html" ignore missing %}</div>
+  </div>
+  <div class="col">
+    <div class="toolbar" id="sel-toolbar" hidden>
+      <span id="sel-info" class="muted"></span>
+      <input type="text" id="new-q-text" placeholder="Question for this selection…" size="40">
+      <button id="btn-add-q" class="primary">Add question</button>
+      <button id="btn-gen-q">Generate question from selection</button>
+      <button id="btn-set-span" hidden>Set span on selected question</button>
+    </div>
+    <div id="doc-view"><p class="muted">Select a document.</p></div>
+  </div>
+</div>
+{% endblock %}
