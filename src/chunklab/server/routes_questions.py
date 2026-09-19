@@ -35,6 +35,9 @@ def _panel(
         "partials/question_list.html",
         {
             "questions": request.app.state.store.list_questions(),
+            "documents": request.app.state.store.list_documents(),
+            "skipped": [],
+            "notices": [],
             "error": error,
             "notice": notice,
         },

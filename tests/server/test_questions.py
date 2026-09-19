@@ -37,6 +37,19 @@ def test_add_edit_respan_delete_question(client: TestClient):
     assert r.status_code == 200 and client.app.state.store.list_questions() == []
 
 
+def test_question_add_oob_swaps_doc_list_count(client: TestClient):
+    doc = _upload(client)
+    s = doc.text.index("Customers may request")
+    e = doc.text.index("Digital goods")
+    r = client.post(
+        "/questions", data={"text": "refund window?", "doc_id": "sample", "start": s, "end": e}
+    )
+    assert r.status_code == 200
+    assert 'id="doc-list"' in r.text
+    assert "hx-swap-oob" in r.text
+    assert "1 q" in r.text
+
+
 def test_invalid_span_rejected(client: TestClient):
     _upload(client)
     r = client.post("/questions", data={"text": "x?", "doc_id": "sample", "start": 10, "end": 5})

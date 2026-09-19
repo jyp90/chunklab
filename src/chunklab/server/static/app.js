@@ -32,6 +32,18 @@
     return { docId: pre.dataset.docId, start: start, end: end };
   }
 
+  // Hand-rolled swap does not go through htmx's swap machinery, so an
+  // hx-swap-oob="true" element embedded in the response (e.g. a stale doc
+  // list count) is applied manually: replace the matching in-page element,
+  // then drop the attribute so htmx.process does not try to swap it again.
+  function applyOob(container) {
+    container.querySelectorAll("[hx-swap-oob]").forEach((el) => {
+      const target = document.getElementById(el.id);
+      el.removeAttribute("hx-swap-oob");
+      if (target) target.replaceWith(el);
+    });
+  }
+
   async function post(url, fields) {
     const body = new URLSearchParams(fields);
     const res = await fetch(url, { method: "POST", body: body });
@@ -39,6 +51,7 @@
     const panel = document.getElementById("question-panel");
     if (panel) {
       panel.innerHTML = html;
+      applyOob(panel);
       if (window.htmx) htmx.process(panel);
       // Same reset as the htmx:afterSwap hook below, which does not fire for
       // this hand-rolled swap: the picked row no longer exists.
