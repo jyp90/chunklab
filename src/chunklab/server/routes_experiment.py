@@ -91,7 +91,10 @@ async def export_yaml(request: Request):
     try:
         cfg = config_from_form(_multi(form))
     except ValueError as e:
-        return HTMLResponse(f"<p class='error'>{e}</p>", status_code=400)
+        # Rendered through Jinja: the message embeds user input and must be escaped.
+        return request.app.state.templates.TemplateResponse(
+            request, "partials/form_error.html", {"error": str(e)}, status_code=400
+        )
     return Response(
         config_to_yaml(cfg),
         media_type="application/x-yaml",

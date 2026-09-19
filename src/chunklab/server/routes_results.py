@@ -137,7 +137,8 @@ def snippet_partial(request: Request, run_id: str, combo: str, framework: str = 
     try:
         code = snippet(c, framework)
     except KeyError as e:
-        return HTMLResponse(f"<p class='error'>{e.args[0]}</p>", status_code=400)
+        # Rendered through Jinja: the message embeds user input and must be escaped.
+        return _tpl(request, "partials/form_error.html", {"error": str(e.args[0])}, 400)
     return _tpl(
         request,
         "partials/snippet.html",

@@ -68,6 +68,15 @@ def test_bad_form_is_400(client: TestClient):
     assert r.status_code == 400 and "integer" in r.text
 
 
+def test_export_error_escapes_user_input(client: TestClient):
+    r = client.post(
+        "/experiment/export",
+        data={**FORM, "recursive_chunk_size": "<img src=x onerror=alert(1)>"},
+    )
+    assert r.status_code == 400
+    assert "&lt;img" in r.text and "<img" not in r.text
+
+
 def test_export_yaml(client: TestClient):
     r = client.post("/experiment/export", data=FORM)
     assert r.status_code == 200 and r.headers["content-disposition"].endswith('filename="exp.yaml"')

@@ -84,6 +84,17 @@ def test_snippet_partial(client: TestClient):
         assert r.status_code == 200 and needle in r.text
 
 
+def test_snippet_error_escapes_user_input(client: TestClient):
+    rid = _run(client)
+    cid = "markdown(chunk_size=512)|fake|k=3|hybrid=False"
+    r = client.get(
+        f"/results/{rid}/snippet",
+        params={"combo": cid, "framework": "<img src=x onerror=alert(1)>"},
+    )
+    assert r.status_code == 400
+    assert "&lt;img" in r.text and "<img" not in r.text
+
+
 def test_runs_history_and_404s(client: TestClient):
     rid = _run(client)
     r = client.get("/runs")
