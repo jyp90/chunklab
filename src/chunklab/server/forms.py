@@ -51,7 +51,8 @@ def config_from_form(form: Mapping[str, str | list[str]]) -> ExperimentConfig:
             {
                 "name": "sentence_window",
                 "params": {
-                    "window": parse_grid(_get(form, "sentence_window_window", "1")) or [1],
+                    "window": parse_grid(_get(form, "sentence_window_window", "1"), allow_zero=True)
+                    or [1],
                 },
             }
         )

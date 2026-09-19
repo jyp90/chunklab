@@ -35,6 +35,9 @@ def test_experiment_page_lists_registry_and_counts(client: TestClient):
     for name in ("recursive", "sentence_window", "markdown", "openai", "gemini", "local", "fake"):
         assert name in r.text
     assert "1 question" in r.text
+    assert r.text.count('hx-post="/experiment/run"') == 1
+    assert r.text.count("btn-export") == 1
+    assert 'id="export-form"' in r.text and 'action="/experiment/export"' in r.text
 
 
 def test_run_without_questions_is_rejected(client: TestClient):

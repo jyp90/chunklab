@@ -58,6 +58,25 @@
 
   document.addEventListener("selectionchange", refreshToolbar);
 
+  // Export must be a real navigation (native form submit) so the browser
+  // treats the Content-Disposition: attachment response as a download
+  // instead of htmx swapping the YAML text into the page.
+  document.addEventListener("click", (ev) => {
+    if (ev.target.id !== "btn-export") return;
+    const src = document.getElementById("exp-form"),
+      dst = document.getElementById("export-form");
+    if (!src || !dst) return;
+    dst.innerHTML = "";
+    for (const [k, v] of new FormData(src).entries()) {
+      const i = document.createElement("input");
+      i.type = "hidden";
+      i.name = k;
+      i.value = v;
+      dst.appendChild(i);
+    }
+    dst.submit();
+  });
+
   document.addEventListener("click", async (ev) => {
     const t = ev.target;
     if (t.classList && t.classList.contains("btn-pick")) {

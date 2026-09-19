@@ -56,8 +56,8 @@ async def start_run(request: Request):
     if not questions:
         return tpl.TemplateResponse(
             request,
-            "experiment.html",
-            _ctx(request, error="add at least one question first"),
+            "partials/form_error.html",
+            {"error": "add at least one question first"},
             status_code=400,
         )
     try:
@@ -65,7 +65,7 @@ async def start_run(request: Request):
         rid = request.app.state.runs.start(cfg, docs, questions)
     except ValueError as e:
         return tpl.TemplateResponse(
-            request, "experiment.html", _ctx(request, error=str(e)), status_code=400
+            request, "partials/form_error.html", {"error": str(e)}, status_code=400
         )
     return tpl.TemplateResponse(
         request, "partials/run_status.html", {"st": request.app.state.runs.status(rid)}

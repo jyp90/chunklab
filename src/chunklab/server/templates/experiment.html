@@ -26,9 +26,10 @@
   </fieldset>
   <div class="toolbar">
     <button class="primary" type="submit" {% if n_questions == 0 %}disabled{% endif %}>Run</button>
-    <button type="submit" formaction="/experiment/export" formmethod="post" hx-disable>Export exp.yaml</button>
+    <button type="button" id="btn-export">Export exp.yaml</button>
     {% if n_questions == 0 %}<span class="muted">Add questions on the Documents page first.</span>{% endif %}
   </div>
 </form>
+<form id="export-form" method="post" action="/experiment/export" style="display:inline"></form>
 <div id="run-status"></div>
 {% endblock %}

@@ -17,6 +17,29 @@ def test_parse_grid_rejects_non_positive():
         parse_grid("-5")
 
 
+def test_config_from_form_sentence_window_allows_zero():
+    cfg = config_from_form(
+        {
+            "chunker_sentence_window": "on",
+            "sentence_window_window": "0",
+            "embedders": "fake",
+            "top_k": "5",
+            "hybrid": "dense",
+        }
+    )
+    assert cfg.chunkers[0].params == {"window": [0]}
+    with pytest.raises(ValueError, match="positive"):
+        config_from_form(
+            {
+                "chunker_recursive": "on",
+                "recursive_chunk_size": "0",
+                "embedders": "fake",
+                "top_k": "5",
+                "hybrid": "dense",
+            }
+        )
+
+
 def test_config_from_form_full():
     cfg = config_from_form(
         {
