@@ -34,6 +34,9 @@ recursive(chunk_size=128,overlap=32)|fake|k=3|hybrid=False      1.000      0.867
 ```bash
 chunklab ui              # opens http://127.0.0.1:7860 — everything stays on your machine
 ```
+
+![Documents & Questions: drag a passage, add a question](docs/images/ui-documents.png)
+![Results: metrics table, recommendation, highlighted retrieval and code snippet](docs/images/ui-results.png)
 1. **Documents & Questions** — upload md/txt/pdf, drag a passage in the viewer → *Add question* (or *Generate question from selection* with your LLM key), or *Auto-generate* N questions per document. Export/import `questions.json` to share with the CLI.
 2. **Experiment** — tick chunkers, type parameter grids, pick embedders, *Run*. Progress updates live. *Export exp.yaml* gives you the same run for `chunklab run` / CI.
 3. **Results** — metrics table with a **Recommended** badge (highest precision among combos within 0.05 of the best hit@k, ties → fewer chunks), per-question drill-down with the gold span and retrieved chunks highlighted on the original text, and copy-paste snippets for LangChain / LlamaIndex / plain Python.
