@@ -170,11 +170,22 @@ def run_experiment(
     questions = load_questions(base_dir / cfg.questions)
     validate_questions(questions, docs, skipped=skipped)
 
-    results: list[ComboResult] = []
-    chunk_cache: dict[tuple[str, tuple], list[Chunk]] = {}
     cache_file = Path(cfg.cache_path).expanduser()
     if not cache_file.is_absolute():
         cache_file = base_dir / cache_file
+    return run_matrix(cfg, docs, questions, cache_file, embedder_factory, progress)
+
+
+def run_matrix(
+    cfg: ExperimentConfig,
+    docs: Sequence[Document],
+    questions: Sequence[Question],
+    cache_file: Path,
+    embedder_factory: Callable[[str], Embedder] = build_embedder,
+    progress: Callable[[str], None] | None = None,
+) -> RunResult:
+    results: list[ComboResult] = []
+    chunk_cache: dict[tuple[str, tuple], list[Chunk]] = {}
     with EmbeddingCache(cache_file) as cache:
         embedders = {spec: CachedEmbedder(embedder_factory(spec), cache) for spec in cfg.embedders}
         for combo in expand_matrix(cfg):

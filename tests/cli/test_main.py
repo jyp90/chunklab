@@ -265,3 +265,29 @@ def test_ui_command_invokes_uvicorn(monkeypatch, tmp_path: Path):
     r = runner.invoke(app, ["ui", "--workspace", str(tmp_path), "--port", "7999", "--no-browser"])
     assert r.exit_code == 0, r.output
     assert calls == {"host": "127.0.0.1", "port": 7999, "workspace": tmp_path.resolve()}
+
+
+def test_run_json_prints_only_json(tmp_path: Path, sample_doc_path: Path):
+    ws = _workspace(tmp_path, sample_doc_path)
+    r = runner.invoke(app, ["run", str(ws / "exp.yaml"), "--json", "--quiet"])
+    assert r.exit_code == 0, r.output
+    data = json.loads(r.stdout)
+    assert "combos" in data and data["combos"][0]["combo_id"].startswith("markdown")
+
+
+def test_recommend_and_snippet_commands(tmp_path: Path, sample_doc_path: Path):
+    ws = _workspace(tmp_path, sample_doc_path)
+    runner.invoke(app, ["run", str(ws / "exp.yaml"), "--quiet"])
+    r = runner.invoke(app, ["recommend", str(ws / "result.json")])
+    assert r.exit_code == 0 and "markdown(" in r.stdout and "precision" in r.stdout
+    r = runner.invoke(app, ["recommend", str(ws / "result.json"), "--json"])
+    assert json.loads(r.stdout)["combo_id"].startswith("markdown")
+    cid = json.loads(r.stdout)["combo_id"]
+    r = runner.invoke(
+        app, ["snippet", str(ws / "result.json"), "--combo", cid, "--framework", "python"]
+    )
+    assert r.exit_code == 0 and "build_chunker" in r.stdout
+    r = runner.invoke(
+        app, ["snippet", str(ws / "result.json"), "--combo", "nope", "--framework", "python"]
+    )
+    assert r.exit_code == 2 and "combo" in r.output

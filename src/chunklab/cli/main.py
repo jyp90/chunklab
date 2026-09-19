@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import json
 import sys
 import threading
 import webbrowser
@@ -17,6 +18,7 @@ import chunklab
 from chunklab.core.embedders import MissingApiKeyError
 from chunklab.core.questions import build_llm, generate_questions, save_questions
 from chunklab.core.runner import (
+    FRAMEWORKS,
     ExperimentConfig,
     RunResult,
     check_regression,
@@ -26,6 +28,8 @@ from chunklab.core.runner import (
     run_experiment,
     unmatched_combos,
 )
+from chunklab.core.runner import recommend as recommend_combo
+from chunklab.core.runner import snippet as build_snippet
 from chunklab.core.text import load_documents
 
 app = typer.Typer(
@@ -89,6 +93,9 @@ def run(
         list[str] | None, typer.Option("--fail-below", help="METRIC=VALUE, repeatable")
     ] = None,
     quiet: Annotated[bool, typer.Option("--quiet")] = False,
+    json_out: Annotated[
+        bool, typer.Option("--json", help="Print the result JSON on stdout and nothing else")
+    ] = False,
 ) -> None:
     cfg = ExperimentConfig.from_yaml(config)
     base_dir = config.resolve().parent
@@ -115,11 +122,16 @@ def run(
         warn=lambda m: typer.echo(f"  warning: {m}", err=True),
     )
     result.to_json(out)
-    typer.echo(format_table(result))
+    if json_out:
+        typer.echo(json.dumps(result.to_dict()))
     misses = sum(c.embed_misses for c in result.combos)
     lookups = sum(c.embed_lookups for c in result.combos)
-    typer.echo(f"\nembeddings: {misses} computed, {lookups - misses} served from cache")
-    typer.echo(f"saved: {out}")
+    # In --json mode stdout carries the JSON document alone; the human report goes to stderr.
+    typer.echo(format_table(result), err=json_out)
+    typer.echo(
+        f"\nembeddings: {misses} computed, {lookups - misses} served from cache", err=json_out
+    )
+    typer.echo(f"saved: {out}", err=json_out)
 
     violations = check_thresholds(result, thresholds)
     if baseline is not None:
@@ -134,7 +146,7 @@ def run(
         for v in violations:
             typer.echo(f"  - {v}", err=True)
         raise typer.Exit(code=1)
-    typer.echo("\nOK")
+    typer.echo("\nOK", err=json_out)
 
 
 @app.command(
@@ -168,6 +180,39 @@ def generate_questions_cmd(
         raise typer.Exit(code=2)
     save_questions(questions, out)
     typer.echo(f"generated {len(questions)} questions from {len(docs)} document(s) -> {out}")
+
+
+@app.command(help="Pick the best combo from a result: best hit@k, then precision, then size.")
+@_user_errors
+def recommend(
+    result: Annotated[Path, typer.Argument(exists=True, dir_okay=False, help="Result JSON")],
+    tolerance: Annotated[float, typer.Option("--tolerance")] = 0.05,
+    json_out: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    rec = recommend_combo(RunResult.from_json(result), tolerance)
+    if rec is None:
+        typer.echo(f"error: no usable combo in {result}", err=True)
+        raise typer.Exit(code=2)
+    if json_out:
+        typer.echo(json.dumps({"combo_id": rec.combo_id, "reason": rec.reason}))
+    else:
+        typer.echo(f"{rec.combo_id} — {rec.reason}")
+
+
+@app.command(help="Print copy-paste code for one combo in the framework of your choice.")
+@_user_errors
+def snippet(
+    result: Annotated[Path, typer.Argument(exists=True, dir_okay=False, help="Result JSON")],
+    combo: Annotated[str, typer.Option("--combo", help="combo_id from the result")],
+    framework: Annotated[
+        str, typer.Option("--framework", help=" | ".join(FRAMEWORKS))
+    ] = "langchain",
+) -> None:
+    run_result = RunResult.from_json(result)
+    match = next((c for c in run_result.combos if c.combo_id == combo), None)
+    if match is None:
+        raise ValueError(f"combo '{combo}' not found in {result}")
+    typer.echo(build_snippet(match, framework))
 
 
 @app.command(help="Start the local web UI (documents, questions, experiments, results).")
