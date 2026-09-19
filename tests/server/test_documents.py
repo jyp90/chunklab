@@ -62,3 +62,28 @@ def test_delete_document(client: TestClient):
     assert r.status_code == 200
     assert "alpha" not in r.text
     assert client.get("/documents/a/view").status_code == 404
+
+
+def test_delete_with_glob_metachar_deletes_nothing(client: TestClient, workspace: Path):
+    client.post("/documents", files=[("files", ("a.md", b"alpha\n", "text/markdown"))])
+    client.post("/documents", files=[("files", ("b.md", b"bravo\n", "text/markdown"))])
+    r = client.delete("/documents/%2A")
+    assert r.status_code == 404
+    assert (workspace / "docs" / "a.md").exists()
+    assert (workspace / "docs" / "b.md").exists()
+    listing = client.get("/")
+    assert "a" in listing.text and "b" in listing.text
+
+
+def test_delete_removes_only_its_own_file(client: TestClient, workspace: Path):
+    client.post("/documents", files=[("files", ("a.md", b"alpha\n", "text/markdown"))])
+    client.post("/documents", files=[("files", ("b.md", b"bravo\n", "text/markdown"))])
+    r = client.delete("/documents/a")
+    assert r.status_code == 200
+    assert not (workspace / "docs" / "a.md").exists()
+    assert (workspace / "docs" / "b.md").exists()
+
+
+def test_view_rejects_bad_id(client: TestClient):
+    r = client.get("/documents/..%2Fx/view")
+    assert r.status_code == 404

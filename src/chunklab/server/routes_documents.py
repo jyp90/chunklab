@@ -10,6 +10,7 @@ from chunklab.core.text import MAX_DOCUMENT_BYTES, load_document
 
 router = APIRouter()
 _SAFE = re.compile(r"[^A-Za-z0-9._-]")
+_ID_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 
 
 def safe_stem(filename: str) -> str:
@@ -27,8 +28,8 @@ def safe_stem(filename: str) -> str:
     return stem or "document"
 
 
-def _render(request: Request, name: str, ctx: dict) -> HTMLResponse:
-    return request.app.state.templates.TemplateResponse(request, name, ctx)
+def _render(request: Request, name: str, ctx: dict, status_code: int = 200) -> HTMLResponse:
+    return request.app.state.templates.TemplateResponse(request, name, ctx, status_code=status_code)
 
 
 def _doc_list_ctx(request: Request, skipped: list[str] | None = None) -> dict:
@@ -73,14 +74,23 @@ async def upload_documents(request: Request, files: list[UploadFile]):
 
 @router.delete("/documents/{doc_id}", response_class=HTMLResponse)
 def delete_document(request: Request, doc_id: str):
+    if not _ID_RE.match(doc_id):
+        return _render(request, "partials/doc_list.html", _doc_list_ctx(request), status_code=404)
+    doc = request.app.state.store.get_document(doc_id)
+    if doc is None:
+        return _render(request, "partials/doc_list.html", _doc_list_ctx(request), status_code=404)
+    docs_dir = (request.app.state.workspace / "docs").resolve()
+    source = Path(doc.source).resolve()
+    if source.parent == docs_dir and source.is_file():
+        source.unlink(missing_ok=True)
     request.app.state.store.delete_document(doc_id)
-    for p in (request.app.state.workspace / "docs").glob(f"{doc_id}.*"):
-        p.unlink(missing_ok=True)
     return _render(request, "partials/doc_list.html", _doc_list_ctx(request))
 
 
 @router.get("/documents/{doc_id}/view", response_class=HTMLResponse)
 def view_document(request: Request, doc_id: str, q: str | None = None):
+    if not _ID_RE.match(doc_id):
+        return HTMLResponse("<p class='error'>document not found</p>", status_code=404)
     doc = request.app.state.store.get_document(doc_id)
     if doc is None:
         return HTMLResponse("<p class='error'>document not found</p>", status_code=404)
