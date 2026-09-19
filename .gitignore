@@ -8,3 +8,4 @@ dist/
 *.egg-info/
 examples/**/result.json
 .chunklab-cache.db
+chunklab.db

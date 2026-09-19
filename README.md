@@ -29,6 +29,25 @@ recursive(chunk_size=128,overlap=32)|fake|k=3|hybrid=False      1.000      0.867
 ...
 ```
 
+## Web UI
+
+```bash
+chunklab ui              # opens http://127.0.0.1:7860 — everything stays on your machine
+```
+1. **Documents & Questions** — upload md/txt/pdf, drag a passage in the viewer → *Add question* (or *Generate question from selection* with your LLM key), or *Auto-generate* N questions per document. Export/import `questions.json` to share with the CLI.
+2. **Experiment** — tick chunkers, type parameter grids, pick embedders, *Run*. Progress updates live. *Export exp.yaml* gives you the same run for `chunklab run` / CI.
+3. **Results** — metrics table with a **Recommended** badge (highest precision among combos within 0.05 of the best hit@k, ties → fewer chunks), per-question drill-down with the gold span and retrieved chunks highlighted on the original text, and copy-paste snippets for LangChain / LlamaIndex / plain Python.
+
+State lives in `./chunklab.db` (SQLite) plus `./docs/` and the embedding cache. Delete them to start over.
+
+## For agents / scripts
+
+```bash
+chunklab run exp.yaml --json > result.json          # machine-readable
+chunklab recommend result.json --json               # {"combo_id": ..., "reason": ...}
+chunklab snippet result.json --combo "<id>" --framework langchain
+```
+
 ## How it works
 
 1. **Documents** (`.md`, `.txt`, `.pdf`) are parsed once into normalized plain text. Every chunk keeps its `(start, end)` character offsets into that text.

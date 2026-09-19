@@ -102,8 +102,13 @@ def question_detail(request: Request, run_id: str, qid: str, combo: str | None =
         hits = [(r["start"], r["end"]) for r in chosen["pq"]["retrieved"] if r["doc_id"] == doc_id]
         html = render_highlighted(doc.text, gold, hits)
 
+    doc_cache: dict[str, Any] = {}
+
     def preview(r: dict[str, Any]) -> str:
-        d = store.get_document(r["doc_id"])
+        did = r["doc_id"]
+        if did not in doc_cache:
+            doc_cache[did] = store.get_document(did)
+        d = doc_cache[did]
         return d.text[r["start"] : r["end"]][:160] if d else ""
 
     return _tpl(

@@ -20,7 +20,7 @@
   <div class="col">
     <label>Question:
       <select name="qid"
-              onchange="htmx.ajax('GET', '/results/{{ result.run_id }}/question/' + encodeURIComponent(this.value), '#question-detail')">
+              onchange="if(this.value){htmx.ajax('GET', '/results/{{ result.run_id }}/question/' + encodeURIComponent(this.value), '#question-detail')}else{document.getElementById('question-detail').innerHTML=''}">
         <option value="">&mdash; pick a question &mdash;</option>
         {% for q in questions %}<option value="{{ q.id }}">{{ q.text }}</option>{% endfor %}
       </select></label>
