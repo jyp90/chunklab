@@ -152,6 +152,26 @@ def test_run_invalid_yaml_exits_2(tmp_path: Path):
     assert "Traceback" not in r.output
 
 
+def test_run_non_scalar_param_reports_single_clean_line(tmp_path: Path, sample_doc_path: Path):
+    ws = _workspace(tmp_path, sample_doc_path)
+    exp = ws / "exp.yaml"
+    exp.write_text(
+        exp.read_text().replace(
+            "  - name: markdown",
+            "  - name: recursive\n    params: {chunk_size: [[10, 20]]}",
+        )
+    )
+    r = runner.invoke(app, ["run", str(exp)])
+    assert r.exit_code == 2, r.output
+    assert "Traceback" not in r.output
+    error_lines = [line for line in r.output.splitlines() if line.startswith("error:")]
+    assert error_lines == [
+        "error: chunkers.0.params: chunker 'recursive' param 'chunk_size' "
+        "has non-scalar value [10, 20]"
+    ]
+    assert "errors.pydantic.dev" not in r.output
+
+
 def test_generate_questions_unknown_llm_exits_2(tmp_path: Path, sample_doc_path: Path):
     r = runner.invoke(
         app,

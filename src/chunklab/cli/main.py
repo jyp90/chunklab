@@ -6,6 +6,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated, TypeVar, cast
 
+import pydantic
 import typer
 import yaml
 
@@ -49,6 +50,11 @@ def _clean(e: Exception) -> str:
     # str(KeyError("x")) is repr'd as "'x'"; every other exception reads fine.
     if isinstance(e, KeyError) and e.args:
         return str(e.args[0])
+    if isinstance(e, pydantic.ValidationError):
+        return "; ".join(
+            f"{'.'.join(map(str, err['loc']))}: {err['msg'].removeprefix('Value error, ')}"
+            for err in e.errors()
+        )
     return str(e)
 
 
