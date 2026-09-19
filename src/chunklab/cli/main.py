@@ -70,12 +70,12 @@ def _user_errors(fn: _F) -> _F:
     return cast(_F, wrapper)
 
 
-@app.command()
-def version() -> None:
-    typer.echo(f"chunklab {chunklab.__version__}")
-
-
-@app.command()
+@app.command(
+    help=(
+        "Run the chunking × embedding × retrieval matrix from a YAML config and print the "
+        "metrics table."
+    )
+)
 @_user_errors
 def run(
     config: Annotated[Path, typer.Argument(exists=True, dir_okay=False, help="Experiment YAML")],
@@ -131,7 +131,10 @@ def run(
     typer.echo("\nOK")
 
 
-@app.command("generate-questions")
+@app.command(
+    "generate-questions",
+    help="Sample passages from documents and ask an LLM to write one test question per passage.",
+)
 @_user_errors
 def generate_questions_cmd(
     paths: Annotated[list[Path], typer.Argument(exists=True, dir_okay=False)],
@@ -159,6 +162,11 @@ def generate_questions_cmd(
         raise typer.Exit(code=2)
     save_questions(questions, out)
     typer.echo(f"generated {len(questions)} questions from {len(docs)} document(s) -> {out}")
+
+
+@app.command(help="Print the chunklab version.")
+def version() -> None:
+    typer.echo(f"chunklab {chunklab.__version__}")
 
 
 def main() -> None:  # pragma: no cover

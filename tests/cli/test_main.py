@@ -106,6 +106,14 @@ def test_run_missing_questions_file_exits_2(tmp_path: Path, sample_doc_path: Pat
     assert "Traceback" not in r.output
 
 
+def test_help_lists_command_descriptions():
+    r = runner.invoke(app, ["--help"])
+    assert r.exit_code == 0, r.output
+    assert "Run the chunking" in r.output
+    assert "Sample passages from documents" in r.output
+    assert "Print the chunklab version." in r.output
+
+
 def test_run_bad_fail_below_expression_exits_2(tmp_path: Path, sample_doc_path: Path):
     ws = _workspace(tmp_path, sample_doc_path)
     r = runner.invoke(app, ["run", str(ws / "exp.yaml"), "--fail-below", "hit@3"])
