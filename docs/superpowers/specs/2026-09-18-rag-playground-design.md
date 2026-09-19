@@ -133,6 +133,46 @@ chunklab/
 - PDF 파싱 실패: 해당 문서만 스킵하고 경고
 - 대용량 문서: MVP에서는 문서당 크기 상한(예: 10MB)으로 단순화
 
+### 3.2 M2 로컬 UI 상세 (2026-09-19 확정)
+
+**실행**: `chunklab ui [--port 7860] [--workspace DIR]` → uvicorn으로 FastAPI 기동, 브라우저 자동 오픈. 워크스페이스 = 프로젝트 디렉터리 하나. 그 안에 `chunklab.db`(SQLite), `docs/`(업로드 원본), `.chunklab-cache.db`(임베딩 캐시)가 생김. CLI의 `exp.yaml`/`questions.json`과 **같은 데이터 모델**을 쓰며 UI에서 export/import 가능 — CLI 사용자와 UI 사용자가 같은 파일로 협업.
+
+**저장소(SQLite, 워크스페이스 로컬)**
+- `documents(id TEXT PK, name, source, content_hash, text)` — 정규화 텍스트를 1회 저장. 이후 모든 span/청크는 이 텍스트 기준(§3 데이터 흐름 1)
+- `questions(id TEXT PK, text, spans_json, created_at)`
+- `runs(run_id TEXT PK, created_at, config_yaml, result_json, status, error)` — 이력. diff 화면은 v1.1
+- 문서 원문·API 키는 DB에 저장하지 않음(원본 파일은 `docs/`에, 키는 환경변수)
+
+**화면 3개 (HTMX + Jinja + 바닐라 JS, 빌드 도구 없음, htmx.min.js는 패키지에 동봉 — CDN 없음)**
+1. **Documents & Questions** `/`
+   - 업로드(md/txt/pdf, 다중), 문서 목록(이름·글자수·질문 수), 삭제
+   - 문서 뷰어: 정규화 텍스트를 **단일 `<pre id="doc">`** 로 렌더 → 브라우저 Selection의 텍스트 노드 offset이 곧 문자열 offset (변환 로직 불필요). 드래그 → 툴바 "Add question" / "Generate question from selection"
+   - "Auto-generate N questions" (LLM은 환경변수 키, 없으면 버튼에 안내)
+   - 질문 목록: 클릭 시 뷰어에서 span 하이라이트, 질문 텍스트 인라인 수정, span 재지정(드래그 후 "Set span"), 삭제
+   - Export `questions.json` / Import
+2. **Experiment** `/experiment`
+   - 청커별 체크박스 + 파라미터 그리드 입력(콤마 구분 값), 임베더 다중 선택(레지스트리 + 커스텀 spec 입력), top_k, hybrid, hit_threshold
+   - "Run" → 서버 백그라운드 스레드에서 `run_experiment` 실행, HTMX 1초 폴링으로 진행률(`done N/M`) 표시. 완료 시 `/results/{run_id}`로 이동
+   - Export `exp.yaml`
+3. **Results** `/results/{run_id}`
+   - 상단: 조합 × 메트릭 표(정렬 가능), **추천 조합 배지**(아래 규칙)
+   - 질문 선택 → 조합별 컬럼에 검색된 청크 프리뷰. 원문 뷰어에서 정답 span(녹색)·검색 청크(노랑)·겹침(진한 녹색) 하이라이트
+   - 조합 선택 → **코드 스니펫**(LangChain / LlamaIndex / 순수 Python 3탭, 복사 버튼)
+   - 이력: `/runs` 에 과거 실행 목록(날짜·조합 수·최고 hit@k), 클릭으로 재열람
+
+**추천 규칙** (`core/runner/recommend.py`, CLI `chunklab recommend result.json`과 UI 배지가 공유)
+1. 에러 조합 제외
+2. hit@k가 최고값의 0.05 이내인 조합만 남김
+3. 그중 precision 최대
+4. 동률이면 청크 수(n_chunks) 적은 쪽
+5. 결과: `{combo_id, reason: "hit@5 1.00 (best), precision 0.24 (best among top-hit)"}`
+
+**CLI 추가 (M2)**: `chunklab ui`, `chunklab recommend RESULT.json [--json]`, `chunklab snippet RESULT.json --combo ID --framework langchain|llamaindex|python`, `chunklab run --json`(표 대신 결과 JSON을 stdout으로 — Claude Code 스킬 등 에이전트 연동용)
+
+**보안/프라이버시**: 서버는 `127.0.0.1` 바인딩 기본, 업로드 파일명은 stem만 사용(경로 조작 차단), 파일당 10MB 상한 유지.
+
+**테스트 전략**: FastAPI `TestClient`로 라우트·폼·백그라운드 실행(스레드) 검증, Jinja 렌더 결과 문자열 단언. 드래그 JS는 순수 브라우저 코드라 pytest 대상 외 — 대신 "span 저장 API가 offset을 그대로 저장하고 뷰어가 같은 텍스트를 렌더한다"를 서버 측에서 검증.
+
 ### 클라우드 (2단계, MVP 이후)
 - 결과 리포트 공유 링크, 실험 이력 저장, 팀 워크스페이스, CI 회귀 감지
 - 로컬 결과 JSON만 push — 문서 원문은 로컬에 남김 (프라이버시 스토리 유지)
