@@ -58,7 +58,8 @@ def check_regression(result: RunResult, baseline: RunResult, max_drop: float) ->
         violations.append("baseline shares no combo ids with this run (grid or embedder changed?)")
     cur_threshold = result.config.get("hit_threshold")
     base_threshold = baseline.config.get("hit_threshold")
-    if cur_threshold != base_threshold:
+    both_set = cur_threshold is not None and base_threshold is not None
+    if both_set and cur_threshold != base_threshold:
         violations.append(
             f"hit_threshold differs from baseline ({cur_threshold} vs {base_threshold})"
         )

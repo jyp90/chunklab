@@ -77,6 +77,12 @@ def test_check_regression_quiet_when_hit_threshold_matches():
     assert check_regression(cur, base, max_drop=0.05) == []
 
 
+def test_check_regression_quiet_when_baseline_lacks_hit_threshold():
+    base = _result(_combo("a", **{"hit@5": 0.9}))  # no hit_threshold key at all
+    cur = _result(_combo("a", **{"hit@5": 0.9}), hit_threshold=0.5)
+    assert check_regression(cur, base, max_drop=0.05) == []
+
+
 def test_unmatched_combos_lists_ids_missing_from_baseline():
     base = _result(_combo("a", **{"hit@5": 0.9}))
     cur = _result(_combo("a", **{"hit@5": 0.9}), _combo("b"), _combo("c"))
