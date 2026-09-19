@@ -61,6 +61,12 @@ async def upload_documents(request: Request, files: list[UploadFile]):
         name = Path(f.filename or "document").name
         suffix = Path(name).suffix.lower()
         target = docs_dir / f"{safe_stem(name)}{suffix}"
+        # Reject on the multipart-declared size first so an oversized upload is
+        # never pulled into memory; the post-read check stays as the fallback
+        # for parts whose size the parser did not report.
+        if f.size is not None and f.size > MAX_DOCUMENT_BYTES:
+            skipped.append(f"{name}: larger than {MAX_DOCUMENT_BYTES} bytes")
+            continue
         data = await f.read()
         if len(data) > MAX_DOCUMENT_BYTES:
             skipped.append(f"{name}: larger than {MAX_DOCUMENT_BYTES} bytes")

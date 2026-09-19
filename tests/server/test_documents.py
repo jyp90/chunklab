@@ -84,6 +84,27 @@ def test_delete_removes_only_its_own_file(client: TestClient, workspace: Path):
     assert (workspace / "docs" / "b.md").exists()
 
 
+def test_upload_skips_oversized_file_without_reading_it(
+    client: TestClient, workspace: Path, monkeypatch
+):
+    from starlette.datastructures import UploadFile
+
+    from chunklab.server import routes_documents
+
+    monkeypatch.setattr(routes_documents, "MAX_DOCUMENT_BYTES", 32)
+
+    async def _boom(self, size: int = -1) -> bytes:
+        raise AssertionError("oversized upload must be skipped before it is read")
+
+    monkeypatch.setattr(UploadFile, "read", _boom)
+    payload = b"x" * 64 + b"\n"
+    r = client.post("/documents", files=[("files", ("big.md", payload, "text/markdown"))])
+    assert r.status_code == 200
+    assert "larger than 32 bytes" in r.text
+    assert client.app.state.store.get_document("big") is None
+    assert not (workspace / "docs" / "big.md").exists()
+
+
 def test_view_rejects_bad_id(client: TestClient):
     r = client.get("/documents/..%2Fx/view")
     assert r.status_code == 404

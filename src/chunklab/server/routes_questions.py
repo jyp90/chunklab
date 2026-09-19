@@ -16,6 +16,9 @@ from chunklab.server.store import Store
 
 router = APIRouter()
 
+#: An imported ``questions.json`` is parsed entirely in memory; cap it.
+MAX_QUESTIONS_BYTES = 5 * 1024 * 1024
+
 #: Same shape as document ids: what ``safe_stem`` produces plus generated suffixes.
 #: ``\A``/``\Z`` rather than ``^``/``$`` so a trailing newline is rejected.
 _ID_RE = re.compile(r"\A[A-Za-z0-9._-]+\Z")
@@ -213,8 +216,13 @@ def export_questions(request: Request):
 @router.post("/questions/import", response_class=HTMLResponse)
 async def import_questions(request: Request, file: UploadFile):
     store = request.app.state.store
+    if file.size is not None and file.size > MAX_QUESTIONS_BYTES:
+        return _panel(request, error="questions file too large", status=400)
     try:
-        data = json.loads(await file.read())
+        raw = await file.read()
+        if len(raw) > MAX_QUESTIONS_BYTES:  # fallback: the parser did not report a size
+            return _panel(request, error="questions file too large", status=400)
+        data = json.loads(raw)
         if not isinstance(data, dict):
             raise ValueError("questions file must be a JSON object")
         if data.get("version") != FORMAT_VERSION:

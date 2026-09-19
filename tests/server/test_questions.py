@@ -146,6 +146,26 @@ def test_auto_generate_without_documents_is_an_error(client: TestClient):
     assert '<div class="error">' in r.text and "generated 0 question(s)" in r.text
 
 
+def test_import_rejects_oversized_file(client: TestClient, monkeypatch):
+    from chunklab.server import routes_questions
+
+    doc = _upload(client)
+    monkeypatch.setattr(routes_questions, "MAX_QUESTIONS_BYTES", 64)
+    payload = {
+        "version": 1,
+        "questions": [
+            {"id": f"q-{i}", "text": "x" * 20, "spans": [{"doc_id": doc.id, "start": 0, "end": 5}]}
+            for i in range(10)
+        ],
+    }
+    r = client.post(
+        "/questions/import",
+        files=[("file", ("questions.json", json.dumps(payload).encode(), "application/json"))],
+    )
+    assert r.status_code == 400 and "questions file too large" in r.text
+    assert client.app.state.store.list_questions() == []
+
+
 def test_import_rejects_id_with_trailing_newline(client: TestClient):
     doc = _upload(client)
     payload = {
