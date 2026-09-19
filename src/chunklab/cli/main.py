@@ -196,7 +196,7 @@ def recommend(
     if json_out:
         typer.echo(json.dumps({"combo_id": rec.combo_id, "reason": rec.reason}))
     else:
-        typer.echo(f"{rec.combo_id} — {rec.reason}")
+        typer.echo(f"{rec.combo_id} - {rec.reason}")
 
 
 @app.command(help="Print copy-paste code for one combo in the framework of your choice.")

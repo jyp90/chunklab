@@ -54,7 +54,7 @@ def _lc_splitter(c: ComboResult) -> str:
             "# docs = splitter.split_documents(headers.split_text(markdown_text))"
         )
     return (
-        "# sentence_window: no direct LangChain equivalent — use chunklab's SentenceWindowChunker\n"
+        "# sentence_window: no direct LangChain equivalent - use chunklab's SentenceWindowChunker\n"
         "from chunklab.core.chunkers import build_chunker\n"
         f"chunker = build_chunker('sentence_window', window={p.get('window', 1)})"
     )
