@@ -251,3 +251,17 @@ def test_generate_questions_exits_2_when_nothing_generated(tmp_path: Path):
     assert "warning: notes: only 0 paragraph(s) >= 200 chars (requested 2)" in r.output
     assert "error: no questions generated" in r.output
     assert not out.exists()
+
+
+def test_ui_command_invokes_uvicorn(monkeypatch, tmp_path: Path):
+    calls = {}
+
+    def fake_run(app, host, port, log_level):
+        calls.update(host=host, port=port, workspace=app.state.workspace)
+
+    import chunklab.cli.main as m
+
+    monkeypatch.setattr(m.uvicorn, "run", fake_run)
+    r = runner.invoke(app, ["ui", "--workspace", str(tmp_path), "--port", "7999", "--no-browser"])
+    assert r.exit_code == 0, r.output
+    assert calls == {"host": "127.0.0.1", "port": 7999, "workspace": tmp_path.resolve()}

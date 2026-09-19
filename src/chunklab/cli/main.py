@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import functools
 import sys
+import threading
+import webbrowser
 from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated, TypeVar, cast
 
 import pydantic
 import typer
+import uvicorn
 import yaml
 
 import chunklab
@@ -165,6 +168,22 @@ def generate_questions_cmd(
         raise typer.Exit(code=2)
     save_questions(questions, out)
     typer.echo(f"generated {len(questions)} questions from {len(docs)} document(s) -> {out}")
+
+
+@app.command(help="Start the local web UI (documents, questions, experiments, results).")
+def ui(
+    port: Annotated[int, typer.Option("--port")] = 7860,
+    workspace: Annotated[Path, typer.Option("--workspace", help="Project directory")] = Path("."),
+    no_browser: Annotated[bool, typer.Option("--no-browser")] = False,
+) -> None:
+    from chunklab.server.app import create_app  # lazy: fastapi import cost only when needed
+
+    web_app = create_app(workspace.resolve())
+    url = f"http://127.0.0.1:{port}/"
+    if not no_browser:
+        threading.Timer(0.8, webbrowser.open, args=(url,)).start()
+    typer.echo(f"chunklab ui -> {url}  (workspace: {web_app.state.workspace})", err=True)
+    uvicorn.run(web_app, host="127.0.0.1", port=port, log_level="warning")
 
 
 @app.command(help="Print the chunklab version.")
