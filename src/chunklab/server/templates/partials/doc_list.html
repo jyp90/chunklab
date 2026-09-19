@@ -1,4 +1,5 @@
 {% if skipped %}<div class="error">{% for s in skipped %}<div>skipped {{ s }}</div>{% endfor %}</div>{% endif %}
+{% if notices %}<div class="muted">{% for n in notices %}<div>{{ n }}</div>{% endfor %}</div>{% endif %}
 <ul class="plain">
 {% for d in documents %}
   <li>

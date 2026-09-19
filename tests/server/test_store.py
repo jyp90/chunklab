@@ -28,6 +28,37 @@ def test_upsert_document_replaces_text(tmp_path: Path):
         assert len(s.list_documents()) == 1
 
 
+def test_upsert_document_keeps_uploaded_name_and_hashes_text(tmp_path: Path):
+    import hashlib
+
+    with Store(tmp_path / "c.db") as s:
+        s.upsert_document(_doc("a", "v1\n"), name="My Report.md")
+        assert s.list_documents()[0].name == "My Report.md"
+        assert s.content_hash("a") == hashlib.sha256(b"v1\n").hexdigest()
+        s.upsert_document(_doc("a", "v2\n"))
+        assert s.list_documents()[0].name == "a"  # name defaults to the id
+        assert s.content_hash("a") == hashlib.sha256(b"v2\n").hexdigest()
+        assert s.content_hash("nope") is None
+
+
+def test_store_adds_content_hash_to_a_legacy_database(tmp_path: Path):
+    import sqlite3
+
+    db = tmp_path / "legacy.db"
+    conn = sqlite3.connect(db)
+    conn.execute(
+        "CREATE TABLE documents (id TEXT PRIMARY KEY, name TEXT NOT NULL,"
+        " source TEXT NOT NULL, text TEXT NOT NULL)"
+    )
+    conn.execute("INSERT INTO documents VALUES ('a', 'a', '/x/a.md', 'old\n')")
+    conn.commit()
+    conn.close()
+    with Store(db) as s:
+        assert s.content_hash("a") is None
+        s.upsert_document(_doc("a", "new\n"))
+        assert s.content_hash("a") is not None
+
+
 def test_questions_roundtrip_and_counts(tmp_path: Path):
     with Store(tmp_path / "c.db") as s:
         s.upsert_document(_doc("a"))

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 import threading
@@ -12,7 +13,8 @@ from chunklab.core.runner.run import ComboResult, RunResult
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS documents (
-  id TEXT PRIMARY KEY, name TEXT NOT NULL, source TEXT NOT NULL, text TEXT NOT NULL
+  id TEXT PRIMARY KEY, name TEXT NOT NULL, source TEXT NOT NULL, text TEXT NOT NULL,
+  content_hash TEXT
 );
 CREATE TABLE IF NOT EXISTS questions (
   id TEXT PRIMARY KEY, text TEXT NOT NULL, spans_json TEXT NOT NULL, created_at TEXT NOT NULL
@@ -67,6 +69,10 @@ class Store:
         self._lock = threading.Lock()
         with self._lock:
             self._conn.executescript(_SCHEMA)
+            try:  # a database created before content_hash existed
+                self._conn.execute("ALTER TABLE documents ADD COLUMN content_hash TEXT")
+            except sqlite3.OperationalError:
+                pass  # the column is already there
             # A run only lives in the process that started it, so anything still
             # marked `running` when we open the DB was killed with the server.
             self._conn.execute(
@@ -85,13 +91,23 @@ class Store:
         self.close()
 
     # ---- documents -------------------------------------------------------
-    def upsert_document(self, doc: Document) -> None:
+    def upsert_document(self, doc: Document, name: str | None = None) -> None:
+        digest = hashlib.sha256(doc.text.encode("utf-8")).hexdigest()
         with self._lock:
             self._conn.execute(
-                "INSERT OR REPLACE INTO documents (id, name, source, text) VALUES (?, ?, ?, ?)",
-                (doc.id, doc.id, doc.source, doc.text),
+                "INSERT OR REPLACE INTO documents (id, name, source, text, content_hash)"
+                " VALUES (?, ?, ?, ?, ?)",
+                (doc.id, name or doc.id, doc.source, doc.text, digest),
             )
             self._conn.commit()
+
+    def content_hash(self, doc_id: str) -> str | None:
+        """sha256 of the stored text, or ``None`` if the document is unknown."""
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT content_hash FROM documents WHERE id = ?", (doc_id,)
+            ).fetchone()
+        return row[0] if row else None
 
     def get_document(self, doc_id: str) -> Document | None:
         with self._lock:

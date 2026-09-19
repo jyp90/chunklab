@@ -84,6 +84,27 @@ def test_delete_removes_only_its_own_file(client: TestClient, workspace: Path):
     assert (workspace / "docs" / "b.md").exists()
 
 
+def test_reupload_with_changed_text_warns_about_stale_spans(client: TestClient):
+    client.post("/documents", files=[("files", ("notes.md", b"first version\n", "text/markdown"))])
+    r = client.post(
+        "/documents", files=[("files", ("notes.md", b"first version\n", "text/markdown"))]
+    )
+    assert "replaced existing document" not in r.text  # identical content: no warning
+
+    r = client.post(
+        "/documents", files=[("files", ("notes.md", b"second version\n", "text/markdown"))]
+    )
+    assert "notes.md: replaced existing document" in r.text
+    assert "notes" in r.text and "spans on it may be stale" in r.text
+    assert client.app.state.store.get_document("notes").text == "second version\n"
+
+
+def test_upload_keeps_the_uploaded_filename(client: TestClient):
+    client.post("/documents", files=[("files", ("My Report.md", b"body text\n", "text/markdown"))])
+    rows = client.app.state.store.list_documents()
+    assert [(r.id, r.name) for r in rows] == [("My_Report", "My Report.md")]
+
+
 def test_upload_skips_oversized_file_without_reading_it(
     client: TestClient, workspace: Path, monkeypatch
 ):

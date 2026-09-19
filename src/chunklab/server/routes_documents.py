@@ -34,8 +34,14 @@ def _render(request: Request, name: str, ctx: dict, status_code: int = 200) -> H
     return request.app.state.templates.TemplateResponse(request, name, ctx, status_code=status_code)
 
 
-def _doc_list_ctx(request: Request, skipped: list[str] | None = None) -> dict:
-    return {"documents": request.app.state.store.list_documents(), "skipped": skipped or []}
+def _doc_list_ctx(
+    request: Request, skipped: list[str] | None = None, notices: list[str] | None = None
+) -> dict:
+    return {
+        "documents": request.app.state.store.list_documents(),
+        "skipped": skipped or [],
+        "notices": notices or [],
+    }
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -57,6 +63,7 @@ async def upload_documents(request: Request, files: list[UploadFile]):
     docs_dir = ws / "docs"
     docs_dir.mkdir(exist_ok=True)
     skipped: list[str] = []
+    notices: list[str] = []
     for f in files:
         name = Path(f.filename or "document").name
         suffix = Path(name).suffix.lower()
@@ -78,8 +85,14 @@ async def upload_documents(request: Request, files: list[UploadFile]):
             skipped.append(f"{name}: {e}")
             target.unlink(missing_ok=True)
             continue
-        request.app.state.store.upsert_document(doc)
-    return _render(request, "partials/doc_list.html", _doc_list_ctx(request, skipped))
+        store = request.app.state.store
+        previous_hash = store.content_hash(doc.id)
+        store.upsert_document(doc, name=name)
+        if previous_hash is not None and previous_hash != store.content_hash(doc.id):
+            notices.append(
+                f"{name}: replaced existing document '{doc.id}' — spans on it may be stale"
+            )
+    return _render(request, "partials/doc_list.html", _doc_list_ctx(request, skipped, notices))
 
 
 @router.delete("/documents/{doc_id}", response_class=HTMLResponse)
