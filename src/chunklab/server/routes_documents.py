@@ -43,6 +43,8 @@ def documents_page(request: Request):
         title="Documents",
         active="documents",
         questions=request.app.state.store.list_questions(),
+        error=None,
+        notice=None,
     )
     return _render(request, "documents.html", ctx)
 

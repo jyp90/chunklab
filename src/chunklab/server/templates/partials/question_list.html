@@ -1,0 +1,29 @@
+<div class="toolbar">
+  <strong>Questions ({{ questions|length }})</strong>
+  <form hx-post="/questions/auto-generate" hx-target="#question-panel" style="display:inline">
+    <input type="number" name="per_doc" value="5" min="1" max="50" style="width:60px" title="per document">
+    <select name="llm"><option>openai</option><option>gemini</option><option value="fake">fake (offline)</option></select>
+    <button type="submit">Auto-generate</button>
+  </form>
+  <a class="btn" href="/questions/export">Export</a>
+  <form hx-post="/questions/import" hx-target="#question-panel" hx-encoding="multipart/form-data" style="display:inline">
+    <input type="file" name="file" accept=".json" required style="width:160px"><button type="submit">Import</button>
+  </form>
+</div>
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+{% if notice %}<div class="muted">{{ notice }}</div>{% endif %}
+<ul class="plain" id="question-list">
+{% for q in questions %}
+  <li data-qid="{{ q.id }}">
+    <a href="#" hx-get="/documents/{{ q.spans[0].doc_id }}/view?q={{ q.id }}" hx-target="#doc-view" class="q-link">{{ q.text }}</a>
+    <div class="muted">{{ q.spans[0].doc_id }} {{ q.spans[0].start }}–{{ q.spans[0].end }}{% if q.spans|length > 1 %} (+{{ q.spans|length - 1 }}){% endif %}</div>
+    <form hx-post="/questions/{{ q.id }}/text" hx-target="#question-panel" style="display:inline">
+      <input type="text" name="text" value="{{ q.text }}" size="28"><button type="submit">Save</button>
+    </form>
+    <button class="btn-pick" data-qid="{{ q.id }}" title="Select this question, then drag in the document and press 'Set span'">Pick</button>
+    <button hx-delete="/questions/{{ q.id }}" hx-target="#question-panel">×</button>
+  </li>
+{% else %}
+  <li class="muted">No questions yet. Drag text in the document, or Auto-generate.</li>
+{% endfor %}
+</ul>
