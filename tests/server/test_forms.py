@@ -83,6 +83,13 @@ def test_config_from_form_defaults_and_errors():
         config_from_form({"chunker_markdown": "on", "top_k": "5", "hybrid": "dense"})
 
 
+def test_config_from_form_rejects_unknown_hybrid_mode():
+    with pytest.raises(ValueError, match="unknown hybrid mode 'bogus'"):
+        config_from_form(
+            {"chunker_markdown": "on", "embedders": "fake", "top_k": "5", "hybrid": "bogus"}
+        )
+
+
 def test_config_to_yaml_roundtrip():
     cfg = config_from_form(
         {"chunker_markdown": "on", "embedders": "fake", "top_k": "5", "hybrid": "hybrid"}

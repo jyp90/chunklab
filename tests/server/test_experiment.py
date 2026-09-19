@@ -68,6 +68,12 @@ def test_bad_form_is_400(client: TestClient):
     assert r.status_code == 400 and "integer" in r.text
 
 
+def test_unknown_hybrid_mode_is_400_not_500(client: TestClient):
+    _seed(client)
+    r = client.post("/experiment/run", data={**FORM, "hybrid": "bogus"})
+    assert r.status_code == 400 and "unknown hybrid mode" in r.text
+
+
 def test_export_error_escapes_user_input(client: TestClient):
     r = client.post(
         "/experiment/export",

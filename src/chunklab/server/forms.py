@@ -72,9 +72,10 @@ def config_from_form(form: Mapping[str, str | list[str]]) -> ExperimentConfig:
     ]
     if not embedders:
         raise ValueError("select at least one embedder")
-    hybrid = {"dense": [False], "hybrid": [True], "both": [False, True]}[
-        _get(form, "hybrid", "dense")
-    ]
+    hybrid_mode = _get(form, "hybrid", "dense")
+    hybrid = {"dense": [False], "hybrid": [True], "both": [False, True]}.get(hybrid_mode)
+    if hybrid is None:
+        raise ValueError(f"unknown hybrid mode '{hybrid_mode}' (dense|hybrid|both)")
     return ExperimentConfig(
         documents=["docs/*"],
         questions="questions.json",
