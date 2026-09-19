@@ -14,7 +14,7 @@ pip install 'chunklab[local]'   # + sentence-transformers for offline embeddings
 ## Quickstart (no API key needed)
 
 ```bash
-git clone https://github.com/<you>/chunklab && cd chunklab/examples/quickstart
+git clone https://github.com/jyp90/chunklab && cd chunklab/examples/quickstart
 chunklab run exp.yaml
 ```
 
@@ -49,6 +49,17 @@ chunklab run exp.yaml --json > result.json          # machine-readable
 chunklab recommend result.json --json               # {"combo_id": ..., "reason": ...}
 chunklab snippet result.json --combo "<id>" --framework langchain
 ```
+
+## Claude Code skill
+
+`skills/chunking-benchmark/SKILL.md` teaches Claude Code to benchmark instead of guess when you ask "how should I chunk these docs?". Install it for your user or project:
+
+```bash
+mkdir -p ~/.claude/skills && cp -r skills/chunking-benchmark ~/.claude/skills/     # all projects
+# or: mkdir -p .claude/skills && cp -r skills/chunking-benchmark .claude/skills/  # this repo only
+```
+
+Then ask Claude: *"pick a chunking strategy for docs/ and give me the LangChain code"* — it runs `generate-questions → run --json → recommend → snippet` and answers with measured numbers.
 
 ## How it works
 

@@ -9,3 +9,4 @@ dist/
 examples/**/result.json
 .chunklab-cache.db
 chunklab.db
+.claude/worktrees/
