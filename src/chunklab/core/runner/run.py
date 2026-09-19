@@ -178,30 +178,28 @@ def run_experiment(
     with EmbeddingCache(cache_file) as cache:
         embedders = {spec: CachedEmbedder(embedder_factory(spec), cache) for spec in cfg.embedders}
         for combo in expand_matrix(cfg):
+            embedder = embedders[combo.embedder]
+            before = (embedder.misses, embedder.lookups)
             try:
                 key = (combo.chunker, combo.chunker_params)
                 if key not in chunk_cache:
                     chunk_cache[key] = _chunk_all(combo, docs)
-                embedder = embedders[combo.embedder]
-                before = (embedder.misses, embedder.lookups)
                 combo_result = _run_combo(
                     combo, chunk_cache[key], questions, embedder, cfg.hit_threshold
                 )
-                combo_result.embed_misses = embedder.misses - before[0]
-                combo_result.embed_lookups = embedder.lookups - before[1]
-                results.append(combo_result)
             except Exception as e:  # noqa: BLE001 - partial failure is a feature
-                results.append(
-                    ComboResult(
-                        combo.id,
-                        combo.chunker,
-                        combo.params_dict(),
-                        combo.embedder,
-                        combo.top_k,
-                        combo.hybrid,
-                        error=f"{type(e).__name__}: {e}",
-                    )
+                combo_result = ComboResult(
+                    combo.id,
+                    combo.chunker,
+                    combo.params_dict(),
+                    combo.embedder,
+                    combo.top_k,
+                    combo.hybrid,
+                    error=f"{type(e).__name__}: {e}",
                 )
+            combo_result.embed_misses = embedder.misses - before[0]
+            combo_result.embed_lookups = embedder.lookups - before[1]
+            results.append(combo_result)
             if progress:
                 progress(combo.id)
 

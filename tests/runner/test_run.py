@@ -140,6 +140,27 @@ def test_partial_failure_is_isolated(workspace: Path):
     assert failed[0].metrics == {}
 
 
+def test_partial_failure_still_records_embed_lookups(workspace: Path):
+    # CachedEmbedder.embed() increments `lookups` before delegating to the
+    # (broken) inner embedder, so a failed combo should still show the
+    # lookups it attempted, not a misleading 0.
+    cfg = ExperimentConfig.from_yaml(workspace / "exp.yaml")
+    cfg = cfg.model_copy(update={"embedders": ["fake", "boom"]})
+
+    class Boom:
+        name = "boom"
+
+        def embed(self, texts):
+            raise RuntimeError("provider down")
+
+    def factory(spec: str):
+        return Boom() if spec == "boom" else FakeEmbedder()
+
+    result = run_experiment(cfg, workspace, embedder_factory=factory)
+    failed = [c for c in result.combos if c.error]
+    assert failed and all(c.embed_lookups > 0 for c in failed)
+
+
 def test_progress_callback_called_per_combo(workspace: Path):
     cfg = ExperimentConfig.from_yaml(workspace / "exp.yaml")
     seen: list[str] = []
