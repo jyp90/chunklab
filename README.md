@@ -40,6 +40,8 @@ chunklab ui              # opens http://127.0.0.1:7860 — everything stays on y
 
 State lives in `./chunklab.db` (SQLite) plus `./docs/` and the embedding cache. Delete them to start over.
 
+The server only answers requests addressed to `127.0.0.1`/`localhost` and rejects cross-origin writes, so another site in your browser cannot reach it via DNS rebinding or a hidden form post.
+
 ## For agents / scripts
 
 ```bash

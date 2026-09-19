@@ -15,6 +15,7 @@ def workspace(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def client(workspace: Path) -> TestClient:
-    app = create_app(workspace)
+    # TestClient sends `Host: testserver`; the app itself only allows localhost.
+    app = create_app(workspace, allowed_hosts={"127.0.0.1", "localhost", "testserver"})
     with TestClient(app) as c:
         yield c

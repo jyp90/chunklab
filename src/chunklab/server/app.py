@@ -15,12 +15,13 @@ from chunklab.server import (
     routes_results,
 )
 from chunklab.server.runs import RunManager
+from chunklab.server.security import LocalOnlyMiddleware
 from chunklab.server.store import Store
 
 _HERE = Path(__file__).parent
 
 
-def create_app(workspace: Path) -> FastAPI:
+def create_app(workspace: Path, allowed_hosts: set[str] | None = None) -> FastAPI:
     workspace = Path(workspace).resolve()
     workspace.mkdir(parents=True, exist_ok=True)
 
@@ -34,6 +35,7 @@ def create_app(workspace: Path) -> FastAPI:
     app.state.store = Store(workspace / "chunklab.db")
     app.state.runs = RunManager(app.state.store, workspace / ".chunklab-cache.db")
     app.state.templates = Jinja2Templates(directory=str(_HERE / "templates"))
+    app.add_middleware(LocalOnlyMiddleware, allowed_hosts=allowed_hosts)
     app.mount("/static", StaticFiles(directory=str(_HERE / "static")), name="static")
 
     app.include_router(routes_documents.router)
