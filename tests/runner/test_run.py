@@ -168,6 +168,34 @@ def test_validate_questions_rejects_duplicate_ids(sample_doc_path: Path):
         validate_questions([q, q], [doc])
 
 
+def test_validate_questions_hints_at_skipped_doc(sample_doc_path: Path):
+    doc = load_document(sample_doc_path)
+    q = Question("ghost", "t", (Span("empty", 0, 1),))
+    with pytest.raises(ValueError, match="was skipped"):
+        validate_questions([q], [doc], skipped={"empty": "EmptyDocumentError: no extractable text"})
+
+
+def test_run_experiment_reports_skipped_doc_hint_for_referencing_question(workspace: Path):
+    (workspace / "docs" / "empty.md").write_text("\n")
+    (workspace / "questions.json").write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "questions": [
+                    {
+                        "id": "ghost",
+                        "text": "x?",
+                        "spans": [{"doc_id": "empty", "start": 0, "end": 1}],
+                    }
+                ],
+            }
+        )
+    )
+    cfg = ExperimentConfig.from_yaml(workspace / "exp.yaml")
+    with pytest.raises(ValueError, match="was skipped"):
+        run_experiment(cfg, workspace, warn=lambda m: None)
+
+
 def test_relative_cache_path_resolves_against_config_dir(workspace: Path, tmp_path, monkeypatch):
     exp = workspace / "exp.yaml"
     exp.write_text(

@@ -68,8 +68,13 @@ class RunResult:
         )
 
 
-def validate_questions(questions: Sequence[Question], docs: Sequence[Document]) -> None:
+def validate_questions(
+    questions: Sequence[Question],
+    docs: Sequence[Document],
+    skipped: dict[str, str] | None = None,
+) -> None:
     lengths = {d.id: len(d.text) for d in docs}
+    skipped = skipped or {}
     seen: set[str] = set()
     for q in questions:
         if q.id in seen:
@@ -79,6 +84,11 @@ def validate_questions(questions: Sequence[Question], docs: Sequence[Document]) 
             raise ValueError(f"question '{q.id}' has no spans")
         for s in q.spans:
             if s.doc_id not in lengths:
+                if s.doc_id in skipped:
+                    raise ValueError(
+                        f"question '{q.id}' references doc_id '{s.doc_id}' "
+                        f"which was skipped ({skipped[s.doc_id]})"
+                    )
                 raise ValueError(f"question '{q.id}' references unknown doc_id '{s.doc_id}'")
             if s.end > lengths[s.doc_id]:
                 raise ValueError(
@@ -146,14 +156,19 @@ def run_experiment(
     warn: Callable[[str], None] | None = None,
 ) -> RunResult:
     base_dir = Path(base_dir)
-    docs = load_documents(
-        cfg.resolve_documents(base_dir),
-        on_error=(lambda p, e: warn(f"skipped {p}: {type(e).__name__}: {e}")) if warn else None,
-    )
+    skipped: dict[str, str] = {}
+    on_error = None
+    if warn is not None:
+
+        def on_error(p: Path, e: Exception, _warn: Callable[[str], None] = warn) -> None:
+            skipped[p.stem] = f"{type(e).__name__}: {e}"
+            _warn(f"skipped {p}: {type(e).__name__}: {e}")
+
+    docs = load_documents(cfg.resolve_documents(base_dir), on_error=on_error)
     if not docs:
         raise ValueError(f"no documents matched {cfg.documents}")
     questions = load_questions(base_dir / cfg.questions)
-    validate_questions(questions, docs)
+    validate_questions(questions, docs, skipped=skipped)
 
     results: list[ComboResult] = []
     chunk_cache: dict[tuple[str, tuple], list[Chunk]] = {}
