@@ -1,5 +1,5 @@
 [project]
-name = "chunklab"
+name = "chunkmatrix"
 version = "0.1.0"
 description = "Benchmark your chunking before you ship it."
 readme = "README.md"

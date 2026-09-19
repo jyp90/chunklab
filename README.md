@@ -7,9 +7,11 @@ chunklab runs your documents through a matrix of chunking strategies × embeddin
 ## Install
 
 ```bash
-pip install chunklab            # OpenAI / Gemini embeddings (bring your own key)
-pip install 'chunklab[local]'   # + sentence-transformers for offline embeddings
+pip install chunkmatrix         # OpenAI / Gemini embeddings (bring your own key)
+pip install 'chunkmatrix[local]' # + sentence-transformers for offline embeddings
 ```
+
+The PyPI distribution is `chunkmatrix`; the import path and CLI command are `chunklab`.
 
 ## Quickstart (no API key needed)
 
