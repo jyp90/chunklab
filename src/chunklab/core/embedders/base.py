@@ -10,6 +10,10 @@ import numpy as np
 _WORD_RE = re.compile(r"\w+")
 
 
+class MissingApiKeyError(RuntimeError):
+    pass
+
+
 @runtime_checkable
 class Embedder(Protocol):
     name: str

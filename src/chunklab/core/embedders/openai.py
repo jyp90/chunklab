@@ -5,11 +5,9 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from chunklab.core.embedders.base import l2_normalize
+from chunklab.core.embedders.base import MissingApiKeyError, l2_normalize
 
-
-class MissingApiKeyError(RuntimeError):
-    pass
+__all__ = ["MissingApiKeyError", "OpenAIEmbedder"]
 
 
 @dataclass

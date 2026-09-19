@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from chunklab.core.embedders.base import Embedder, FakeEmbedder
+from chunklab.core.embedders.base import Embedder, FakeEmbedder, MissingApiKeyError
 from chunklab.core.embedders.cache import CachedEmbedder, EmbeddingCache
 from chunklab.core.embedders.gemini import GeminiEmbedder
 from chunklab.core.embedders.local import LocalEmbedder
-from chunklab.core.embedders.openai import MissingApiKeyError, OpenAIEmbedder
+from chunklab.core.embedders.openai import OpenAIEmbedder
 
 _PROVIDERS = {
     "fake": lambda model: FakeEmbedder(),

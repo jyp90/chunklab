@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
 
-from chunklab.core.embedders.openai import MissingApiKeyError
+from chunklab.core.embedders.base import MissingApiKeyError
 
 
 @runtime_checkable
