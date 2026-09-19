@@ -126,7 +126,8 @@ class Store:
             ).fetchone()
             created = existing[0] if existing else _now()
             self._conn.execute(
-                "INSERT OR REPLACE INTO questions (id, text, spans_json, created_at) VALUES (?, ?, ?, ?)",
+                "INSERT OR REPLACE INTO questions (id, text, spans_json, created_at)"
+                " VALUES (?, ?, ?, ?)",
                 (q.id, q.text, spans, created),
             )
             self._conn.commit()
@@ -173,7 +174,8 @@ class Store:
             ).fetchone()
             created = existing[0] if existing else _now()
             self._conn.execute(
-                "INSERT OR REPLACE INTO runs (run_id, created_at, status, config_yaml, result_json, error)"
+                "INSERT OR REPLACE INTO runs"
+                " (run_id, created_at, status, config_yaml, result_json, error)"
                 " VALUES (?, ?, ?, ?, ?, ?)",
                 (
                     run_id,
