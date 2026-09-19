@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<table><thead><tr><th>run</th><th>created</th><th>status</th><th class="num">combos</th><th class="num">best hit@k</th></tr></thead><tbody>
+{% for r in runs %}
+<tr><td>{% if r.row.status == 'done' %}<a href="/results/{{ r.row.run_id }}">{{ r.row.run_id }}</a>{% else %}{{ r.row.run_id }}{% endif %}</td>
+<td>{{ r.row.created_at }}</td><td>{{ r.row.status }}{% if r.row.error %} <span class="error">{{ r.row.error }}</span>{% endif %}</td>
+<td class="num">{{ r.n }}</td><td class="num">{{ '%.3f'|format(r.best_hit) if r.best_hit is not none else '-' }}</td></tr>
+{% else %}<tr><td colspan="5" class="muted">No runs yet.</td></tr>{% endfor %}
+</tbody></table>
+{% endblock %}

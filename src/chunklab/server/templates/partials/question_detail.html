@@ -1,0 +1,21 @@
+<h3>{{ q.text }}</h3>
+<div class="toolbar">
+{% for card in cards %}
+  <button class="{{ 'active' if chosen and card.combo.combo_id == chosen.combo.combo_id else '' }}"
+          hx-get="/results/{{ run_id }}/question/{{ q.id }}?combo={{ card.combo.combo_id|urlencode }}" hx-target="#question-detail">
+    {{ card.combo.combo_id }}
+    {% if card.pq %} &middot; {{ 'hit' if card.pq.hit else 'miss' }} &middot; p {{ '%.2f'|format(card.pq.precision) }}{% endif %}
+  </button>
+{% endfor %}
+</div>
+{% if chosen and chosen.pq %}
+  <ol>
+  {% for r in chosen.pq.retrieved %}
+    <li><span class="muted">rank {{ loop.index }} &middot; {{ r.doc_id }} {{ r.start }}&ndash;{{ r.end }} &middot; score {{ '%.3f'|format(r.score) }}</span><br>{{ preview(r) }}</li>
+  {% endfor %}
+  </ol>
+  <p class="muted"><mark class="gold">gold span</mark> <mark class="hit">retrieved</mark> <mark class="both">overlap</mark> &mdash; {{ doc_id }}</p>
+  <pre id="doc" data-doc-id="{{ doc_id }}">{{ html|safe }}</pre>
+{% elif chosen %}
+  <p class="error">this combo failed: {{ chosen.combo.error }}</p>
+{% endif %}

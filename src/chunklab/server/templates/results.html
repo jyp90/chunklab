@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<p class="muted">run {{ result.run_id }} &middot; {{ run.created_at }} &middot; {{ combos|length }} combos</p>
+{% if rec %}<p><span class="badge">Recommended</span> <strong>{{ rec.combo_id }}</strong> &mdash; {{ rec.reason }}</p>{% else %}<p class="muted">No usable combo to recommend.</p>{% endif %}
+<table>
+  <thead><tr><th>combo <a href="/results/{{ result.run_id }}" class="muted">&#8634;</a></th>
+  {% for k in metric_keys %}<th class="num"><a href="/results/{{ result.run_id }}?sort={{ k|urlencode }}">{{ k }}{% if sort == k %} &#9660;{% endif %}</a></th>{% endfor %}<th class="num">chunks</th><th></th></tr></thead>
+  <tbody>
+  {% for c in combos %}
+    <tr class="{{ 'recommended' if rec and c.combo_id == rec.combo_id else '' }}">
+      <td>{{ c.combo_id }}</td>
+      {% if c.error %}<td colspan="{{ metric_keys|length + 1 }}" class="error">ERROR: {{ c.error }}</td>
+      {% else %}{% for k in metric_keys %}<td class="num">{{ '%.3f'|format(c.metrics[k]) if k in c.metrics else '-' }}</td>{% endfor %}<td class="num">{{ c.n_chunks }}</td>{% endif %}
+      <td><button hx-get="/results/{{ result.run_id }}/snippet?combo={{ quote(c.combo_id, safe='') }}&amp;framework=python" hx-target="#snippet">code</button></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<div class="row" style="margin-top:20px">
+  <div class="col">
+    <label>Question:
+      <select name="qid"
+              onchange="htmx.ajax('GET', '/results/{{ result.run_id }}/question/' + encodeURIComponent(this.value), '#question-detail')">
+        <option value="">&mdash; pick a question &mdash;</option>
+        {% for q in questions %}<option value="{{ q.id }}">{{ q.text }}</option>{% endfor %}
+      </select></label>
+    <div id="question-detail"></div>
+  </div>
+  <div class="col-narrow" id="snippet"><p class="muted">Click &ldquo;code&rdquo; on a combo to get a snippet.</p></div>
+</div>
+{% endblock %}

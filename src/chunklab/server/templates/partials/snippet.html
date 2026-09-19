@@ -1,0 +1,5 @@
+<div class="tabs toolbar">
+{% for fw in frameworks %}<button class="{{ 'active' if fw == framework else '' }}" hx-get="/results/{{ run_id }}/snippet?combo={{ quote(combo.combo_id, safe='') }}&amp;framework={{ fw }}" hx-target="#snippet">{{ fw }}</button>{% endfor %}
+<button onclick="navigator.clipboard.writeText(document.getElementById('snippet-code').innerText)">copy</button>
+</div>
+<pre class="code" id="snippet-code">{{ code }}</pre>

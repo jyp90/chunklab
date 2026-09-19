@@ -8,7 +8,12 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from chunklab.server import routes_documents, routes_experiment, routes_questions
+from chunklab.server import (
+    routes_documents,
+    routes_experiment,
+    routes_questions,
+    routes_results,
+)
 from chunklab.server.runs import RunManager
 from chunklab.server.store import Store
 
@@ -34,6 +39,7 @@ def create_app(workspace: Path) -> FastAPI:
     app.include_router(routes_documents.router)
     app.include_router(routes_questions.router)
     app.include_router(routes_experiment.router)
+    app.include_router(routes_results.router)
 
     @app.get("/health")
     def health() -> dict[str, str]:
