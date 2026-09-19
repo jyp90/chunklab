@@ -84,6 +84,17 @@ def test_runs_roundtrip(tmp_path: Path):
         assert s.list_runs()[0].error == "boom"
 
 
+def test_reopening_marks_interrupted_runs_as_error(tmp_path: Path):
+    db = tmp_path / "c.db"
+    with Store(db) as s:
+        s.save_run("r1", "running", "documents: []\n")
+        s.save_run("r2", "done", "documents: []\n")
+    with Store(db) as s:
+        r1 = s.get_run("r1")
+        assert r1.status == "error" and r1.error == "interrupted (server restarted)"
+        assert s.get_run("r2").status == "done"
+
+
 def test_missing_rows_return_none(tmp_path: Path):
     with Store(tmp_path / "c.db") as s:
         assert s.get_document("nope") is None

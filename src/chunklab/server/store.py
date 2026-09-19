@@ -67,6 +67,13 @@ class Store:
         self._lock = threading.Lock()
         with self._lock:
             self._conn.executescript(_SCHEMA)
+            # A run only lives in the process that started it, so anything still
+            # marked `running` when we open the DB was killed with the server.
+            self._conn.execute(
+                "UPDATE runs SET status = 'error', error = ? WHERE status = 'running'",
+                ("interrupted (server restarted)",),
+            )
+            self._conn.commit()
 
     def close(self) -> None:
         self._conn.close()
