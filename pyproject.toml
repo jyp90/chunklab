@@ -5,6 +5,20 @@ description = "Benchmark your chunking before you ship it."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
+license-files = ["LICENSE"]
+authors = [{ name = "jyp90" }]
+keywords = ["rag", "chunking", "retrieval", "benchmark", "embeddings", "evaluation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Testing",
+]
 dependencies = [
     "numpy>=1.26",
     "pydantic>=2.7",
@@ -22,6 +36,11 @@ dependencies = [
 
 [project.optional-dependencies]
 local = ["sentence-transformers>=3.0"]
+
+[project.urls]
+Homepage = "https://github.com/jyp90/chunklab"
+Repository = "https://github.com/jyp90/chunklab"
+Issues = "https://github.com/jyp90/chunklab/issues"
 
 [project.scripts]
 chunklab = "chunklab.cli.main:app"
