@@ -84,6 +84,12 @@ def run(
     cfg = ExperimentConfig.from_yaml(config)
     base_dir = config.resolve().parent
     out = out or base_dir / "result.json"
+    questions_path = base_dir / cfg.questions
+    if out.resolve() in {config.resolve(), questions_path.resolve()}:
+        typer.echo(
+            f"error: --out must not overwrite the config or questions file ({out})", err=True
+        )
+        raise typer.Exit(code=2)
     thresholds = parse_thresholds(fail_below or [])
 
     def progress(combo_id: str) -> None:

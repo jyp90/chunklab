@@ -125,6 +125,24 @@ def test_run_unknown_embedder_exits_2(tmp_path: Path, sample_doc_path: Path):
     assert '"unknown' not in r.output  # KeyError quoting stripped
 
 
+def test_run_out_overwriting_questions_file_exits_2(tmp_path: Path, sample_doc_path: Path):
+    ws = _workspace(tmp_path, sample_doc_path)
+    r = runner.invoke(app, ["run", str(ws / "exp.yaml"), "--out", str(ws / "questions.json")])
+    assert r.exit_code == 2, r.output
+    assert "error: --out must not overwrite the config or questions file" in r.output
+    assert "Traceback" not in r.output
+    # the questions file must survive untouched
+    assert json.loads((ws / "questions.json").read_text())
+
+
+def test_run_out_overwriting_config_exits_2(tmp_path: Path, sample_doc_path: Path):
+    ws = _workspace(tmp_path, sample_doc_path)
+    r = runner.invoke(app, ["run", str(ws / "exp.yaml"), "--out", str(ws / "exp.yaml")])
+    assert r.exit_code == 2, r.output
+    assert "error: --out must not overwrite the config or questions file" in r.output
+    assert "Traceback" not in r.output
+
+
 def test_run_invalid_yaml_exits_2(tmp_path: Path):
     exp = tmp_path / "exp.yaml"
     exp.write_text("documents: [docs/*.md\nchunkers: :\n")
