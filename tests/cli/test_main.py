@@ -101,7 +101,7 @@ def test_run_missing_questions_file_exits_2(tmp_path: Path, sample_doc_path: Pat
     (ws / "questions.json").unlink()
     r = runner.invoke(app, ["run", str(ws / "exp.yaml")])
     assert r.exit_code == 2, r.output
-    assert "error:" in r.output
+    assert "error: questions file not found:" in r.output
     assert "questions.json" in r.output
     assert "Traceback" not in r.output
 

@@ -96,6 +96,9 @@ def run(
             f"error: --out must not overwrite the config or questions file ({out})", err=True
         )
         raise typer.Exit(code=2)
+    if not questions_path.exists():
+        typer.echo(f"error: questions file not found: {questions_path}", err=True)
+        raise typer.Exit(code=2)
     thresholds = parse_thresholds(fail_below or [])
 
     def progress(combo_id: str) -> None:
