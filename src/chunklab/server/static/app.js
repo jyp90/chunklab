@@ -2,16 +2,15 @@
 (function () {
   let picked = null; // question id chosen via "Pick"
 
+  // Character offset of (node, offset) from the start of `pre`, counting only
+  // text. Container-agnostic: works when the Range is anchored on a text node,
+  // on a <mark> that Task 5 interleaved, or on #doc itself (Shift+click).
   function offsetWithin(pre, node, offset) {
-    // Walk text nodes in document order and sum lengths until we reach `node`.
-    // Keeps working when <mark> elements are interleaved inside #doc.
-    const walker = document.createTreeWalker(pre, NodeFilter.SHOW_TEXT);
-    let total = 0, cur;
-    while ((cur = walker.nextNode())) {
-      if (cur === node) return total + offset;
-      total += cur.nodeValue.length;
-    }
-    return node === pre ? total : -1; // anchored on <pre> itself (e.g. triple-click) → end
+    if (node !== pre && !pre.contains(node)) return -1;
+    const r = document.createRange();
+    r.setStart(pre, 0);
+    r.setEnd(node, offset);
+    return r.toString().length;
   }
 
   function currentSpan() {
@@ -49,6 +48,13 @@
       document.getElementById("btn-set-span").hidden = !picked;
     }
   }
+
+  // htmx 2.x drops 4xx responses by default; our 400/404 bodies ARE the panel
+  // (error + current list), so swap them in instead of silently doing nothing.
+  document.body.addEventListener("htmx:beforeSwap", (e) => {
+    const status = e.detail.xhr.status;
+    if (status === 400 || status === 404) e.detail.shouldSwap = true;
+  });
 
   document.addEventListener("selectionchange", refreshToolbar);
 

@@ -107,3 +107,57 @@ def test_panel_lists_questions(client: TestClient):
     client.post("/questions", data={"text": "hello?", "doc_id": "sample", "start": 0, "end": 5})
     r = client.get("/questions/panel")
     assert "hello?" in r.text and 'hx-get="/documents/sample/view?q=' in r.text
+
+
+def test_edit_text_rejects_empty(client: TestClient):
+    _upload(client)
+    client.post("/questions", data={"text": "keep me?", "doc_id": "sample", "start": 0, "end": 5})
+    q = client.app.state.store.list_questions()[0]
+    r = client.post(f"/questions/{q.id}/text", data={"text": "   "})
+    assert r.status_code == 400 and "empty" in r.text
+    assert client.app.state.store.get_question(q.id).text == "keep me?"
+
+
+class _BoomLLM:
+    def complete(self, prompt: str) -> str:
+        raise RuntimeError("upstream exploded")
+
+
+def test_llm_failure_is_400_not_500(client: TestClient, monkeypatch):
+    doc = _upload(client)
+    monkeypatch.setattr(
+        "chunklab.server.routes_questions.build_llm", lambda spec: _BoomLLM(), raising=True
+    )
+    r = client.post(
+        "/questions/generate-from-selection",
+        data={"doc_id": "sample", "start": 0, "end": 20, "llm": "fake"},
+    )
+    assert r.status_code == 400 and "RuntimeError: upstream exploded" in r.text
+    assert client.app.state.store.list_questions() == []
+
+    r = client.post("/questions/auto-generate", data={"per_doc": 1, "llm": "fake", "min_len": 50})
+    assert r.status_code == 400 and "RuntimeError: upstream exploded" in r.text
+    assert doc is not None
+
+
+def test_auto_generate_without_documents_is_an_error(client: TestClient):
+    r = client.post("/questions/auto-generate", data={"per_doc": 2, "llm": "fake"})
+    assert r.status_code == 400
+    assert '<div class="error">' in r.text and "generated 0 question(s)" in r.text
+
+
+def test_import_rejects_id_with_trailing_newline(client: TestClient):
+    doc = _upload(client)
+    payload = {
+        "version": 1,
+        "questions": [
+            {"id": "q\n", "text": "sneaky?", "spans": [{"doc_id": doc.id, "start": 0, "end": 5}]},
+            {"id": "ok-1", "text": "fine?", "spans": [{"doc_id": doc.id, "start": 0, "end": 5}]},
+        ],
+    }
+    r = client.post(
+        "/questions/import",
+        files=[("file", ("questions.json", json.dumps(payload).encode(), "application/json"))],
+    )
+    assert r.status_code == 200 and "imported 1, skipped 1" in r.text
+    assert [q.id for q in client.app.state.store.list_questions()] == ["ok-1"]

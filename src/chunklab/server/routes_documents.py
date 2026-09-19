@@ -10,7 +10,8 @@ from chunklab.core.text import MAX_DOCUMENT_BYTES, load_document
 
 router = APIRouter()
 _SAFE = re.compile(r"[^A-Za-z0-9._-]")
-_ID_RE = re.compile(r"^[A-Za-z0-9._-]+$")
+#: ``\A``/``\Z`` rather than ``^``/``$`` so a trailing newline is rejected.
+_ID_RE = re.compile(r"\A[A-Za-z0-9._-]+\Z")
 
 
 def safe_stem(filename: str) -> str:

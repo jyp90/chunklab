@@ -17,7 +17,8 @@ from chunklab.server.store import Store
 router = APIRouter()
 
 #: Same shape as document ids: what ``safe_stem`` produces plus generated suffixes.
-_ID_RE = re.compile(r"^[A-Za-z0-9._-]+$")
+#: ``\A``/``\Z`` rather than ``^``/``$`` so a trailing newline is rejected.
+_ID_RE = re.compile(r"\A[A-Za-z0-9._-]+\Z")
 
 
 def _panel(
@@ -89,7 +90,9 @@ def edit_text(request: Request, qid: str, text: Annotated[str, Form()]):
     q = _lookup(request, qid)
     if q is None:
         return _panel(request, error="question not found", status=404)
-    request.app.state.store.upsert_question(Question(q.id, text.strip() or q.text, q.spans))
+    if not text.strip():
+        return _panel(request, error="question text is empty", status=400)
+    request.app.state.store.upsert_question(Question(q.id, text.strip(), q.spans))
     return _panel(request)
 
 
@@ -140,6 +143,8 @@ def generate_from_selection(
         reply = build_llm(llm).complete(QUESTION_PROMPT.format(passage=passage))
     except (ValueError, KeyError, MissingApiKeyError) as e:
         return _panel(request, error=_llm_error(e), status=400)
+    except Exception as e:  # noqa: BLE001 - provider/network failure must not 500 away the panel
+        return _panel(request, error=f"{type(e).__name__}: {e}", status=400)
     first = next((ln.strip() for ln in reply.splitlines() if ln.strip()), "")
     if not first:
         return _panel(request, error="LLM returned an empty reply", status=400)
@@ -169,15 +174,20 @@ def auto_generate(
         )
     except (KeyError, MissingApiKeyError) as e:
         return _panel(request, error=_llm_error(e), status=400)
+    except Exception as e:  # noqa: BLE001 - provider/network failure must not 500 away the panel
+        return _panel(request, error=f"{type(e).__name__}: {e}", status=400)
     existing = {q.id for q in store.list_questions()}
     for q in qs:
         qid = q.id if q.id not in existing else f"{q.id}-{secrets.token_hex(2)}"
         existing.add(qid)
         store.upsert_question(Question(qid, q.text, q.spans))
-    notice = f"generated {len(qs)} question(s)"
+    message = f"generated {len(qs)} question(s)"
     if warnings:
-        notice += "; " + " / ".join(warnings)
-    return _panel(request, notice=notice, status=200 if qs else 400)
+        message += "; " + " / ".join(warnings)
+    if not qs:
+        # Nothing generated is a failure the user must see, matching the CLI's exit 2.
+        return _panel(request, error=message, status=400)
+    return _panel(request, notice=message)
 
 
 @router.get("/questions/export")
