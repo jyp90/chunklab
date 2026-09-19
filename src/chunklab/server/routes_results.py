@@ -76,7 +76,6 @@ def results_page(request: Request, run_id: str, sort: str | None = None):
             "rec": recommend(result),
             "sort": sort,
             "questions": request.app.state.store.list_questions(),
-            "frameworks": FRAMEWORKS,
             "quote": quote,
         },
     )

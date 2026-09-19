@@ -28,6 +28,15 @@ def _seed(client: TestClient):
     )
 
 
+def _await_finish(client: TestClient, rid: str) -> None:
+    """Let the run thread finish before the fixture closes the store."""
+    for _ in range(300):
+        if client.app.state.runs.status(rid).state != "running":
+            return
+        time.sleep(0.02)
+    raise AssertionError("never finished")
+
+
 def test_experiment_page_lists_registry_and_counts(client: TestClient):
     _seed(client)
     r = client.get("/experiment")
@@ -66,6 +75,18 @@ def test_bad_form_is_400(client: TestClient):
     _seed(client)
     r = client.post("/experiment/run", data={**FORM, "top_k": "five"})
     assert r.status_code == 400 and "integer" in r.text
+
+
+def test_run_status_wrapper_is_not_nested(client: TestClient):
+    _seed(client)
+    page = client.get("/experiment")
+    assert page.text.count('id="run-status"') == 1
+    r = client.post("/experiment/run", data=FORM)
+    assert r.status_code == 200
+    assert r.text.count('id="run-status"') == 0
+    assert 'id="run-status-inner"' in r.text
+    rid = r.text.split("/experiment/status/")[1].split('"')[0]
+    _await_finish(client, rid)
 
 
 def test_unknown_hybrid_mode_is_400_not_500(client: TestClient):

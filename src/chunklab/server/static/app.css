@@ -22,7 +22,6 @@ pre#doc { white-space:pre-wrap; word-wrap:break-word; border:1px solid var(--lin
 mark.gold { background:var(--gold); }
 mark.hit { background:var(--hit); }
 mark.both { background:var(--both); }
-mark.sel { outline:2px solid var(--accent); background:transparent; }
 .toolbar { display:flex; gap:8px; align-items:center; margin:8px 0; flex-wrap:wrap; }
 .badge { display:inline-block; padding:2px 8px; border-radius:10px; background:var(--accent); color:#fff; font-size:12px; }
 .error { color:#b91c1c; }

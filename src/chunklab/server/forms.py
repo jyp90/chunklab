@@ -76,13 +76,16 @@ def config_from_form(form: Mapping[str, str | list[str]]) -> ExperimentConfig:
     hybrid = {"dense": [False], "hybrid": [True], "both": [False, True]}.get(hybrid_mode)
     if hybrid is None:
         raise ValueError(f"unknown hybrid mode '{hybrid_mode}' (dense|hybrid|both)")
+    hit_threshold = float(_get(form, "hit_threshold", "0.5") or 0.5)
+    if not 0 < hit_threshold <= 1:
+        raise ValueError(f"hit_threshold must be greater than 0 and at most 1, got {hit_threshold}")
     return ExperimentConfig(
         documents=["docs/*"],
         questions="questions.json",
         chunkers=chunkers,
         embedders=list(dict.fromkeys(embedders)),
         retrieval={"top_k": parse_grid(_get(form, "top_k", "5")) or [5], "hybrid": hybrid},
-        hit_threshold=float(_get(form, "hit_threshold", "0.5") or 0.5),
+        hit_threshold=hit_threshold,
         cache_path=".chunklab-cache.db",
     )
 

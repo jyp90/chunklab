@@ -83,6 +83,33 @@ def test_config_from_form_defaults_and_errors():
         config_from_form({"chunker_markdown": "on", "top_k": "5", "hybrid": "dense"})
 
 
+@pytest.mark.parametrize("bad", ["0", "-0.5", "1.5"])
+def test_config_from_form_rejects_out_of_range_hit_threshold(bad: str):
+    with pytest.raises(ValueError, match="hit_threshold"):
+        config_from_form(
+            {
+                "chunker_markdown": "on",
+                "embedders": "fake",
+                "top_k": "5",
+                "hybrid": "dense",
+                "hit_threshold": bad,
+            }
+        )
+
+
+def test_config_from_form_allows_hit_threshold_of_one():
+    cfg = config_from_form(
+        {
+            "chunker_markdown": "on",
+            "embedders": "fake",
+            "top_k": "5",
+            "hybrid": "dense",
+            "hit_threshold": "1",
+        }
+    )
+    assert cfg.hit_threshold == 1.0
+
+
 def test_config_from_form_rejects_unknown_hybrid_mode():
     with pytest.raises(ValueError, match="unknown hybrid mode 'bogus'"):
         config_from_form(

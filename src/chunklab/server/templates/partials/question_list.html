@@ -5,6 +5,7 @@
     <select name="llm"><option>openai</option><option>gemini</option><option value="fake">fake (offline)</option></select>
     <button type="submit">Auto-generate</button>
   </form>
+  <span class="muted">needs OPENAI_API_KEY / GEMINI_API_KEY in the shell that started <code>chunklab ui</code> (or pick fake)</span>
   <a class="btn" href="/questions/export">Export</a>
   <form hx-post="/questions/import" hx-target="#question-panel" hx-encoding="multipart/form-data" style="display:inline">
     <input type="file" name="file" accept=".json" required style="width:160px"><button type="submit">Import</button>
