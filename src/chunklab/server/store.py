@@ -101,8 +101,16 @@ class Store:
             )
             self._conn.commit()
 
+    def has_document(self, doc_id: str) -> bool:
+        """Whether a row exists — distinct from ``content_hash`` returning ``None``,
+        which a row written before the ``content_hash`` column existed also does."""
+        with self._lock:
+            row = self._conn.execute("SELECT 1 FROM documents WHERE id = ?", (doc_id,)).fetchone()
+        return row is not None
+
     def content_hash(self, doc_id: str) -> str | None:
-        """sha256 of the stored text, or ``None`` if the document is unknown."""
+        """sha256 of the stored text, or ``None`` if the document is unknown or
+        predates the ``content_hash`` column."""
         with self._lock:
             row = self._conn.execute(
                 "SELECT content_hash FROM documents WHERE id = ?", (doc_id,)

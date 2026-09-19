@@ -86,9 +86,12 @@ async def upload_documents(request: Request, files: list[UploadFile]):
             target.unlink(missing_ok=True)
             continue
         store = request.app.state.store
+        existed = store.has_document(doc.id)
         previous_hash = store.content_hash(doc.id)
         store.upsert_document(doc, name=name)
-        if previous_hash is not None and previous_hash != store.content_hash(doc.id):
+        # An unknown previous hash (a row from before the column existed) counts
+        # as replaced: we cannot prove the text is unchanged.
+        if existed and previous_hash != store.content_hash(doc.id):
             notices.append(
                 f"{name}: replaced existing document '{doc.id}' — spans on it may be stale"
             )

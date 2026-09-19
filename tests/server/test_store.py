@@ -39,6 +39,7 @@ def test_upsert_document_keeps_uploaded_name_and_hashes_text(tmp_path: Path):
         assert s.list_documents()[0].name == "a"  # name defaults to the id
         assert s.content_hash("a") == hashlib.sha256(b"v2\n").hexdigest()
         assert s.content_hash("nope") is None
+        assert s.has_document("a") and not s.has_document("nope")
 
 
 def test_store_adds_content_hash_to_a_legacy_database(tmp_path: Path):
@@ -54,7 +55,8 @@ def test_store_adds_content_hash_to_a_legacy_database(tmp_path: Path):
     conn.commit()
     conn.close()
     with Store(db) as s:
-        assert s.content_hash("a") is None
+        # A legacy row exists but its hash is unknown: the two must be distinguishable.
+        assert s.content_hash("a") is None and s.has_document("a")
         s.upsert_document(_doc("a", "new\n"))
         assert s.content_hash("a") is not None
 

@@ -99,6 +99,23 @@ def test_reupload_with_changed_text_warns_about_stale_spans(client: TestClient):
     assert client.app.state.store.get_document("notes").text == "second version\n"
 
 
+def test_reupload_onto_a_legacy_row_without_a_hash_warns(client: TestClient, workspace: Path):
+    """A pre-migration row has a NULL hash: unknown content must count as replaced."""
+    import sqlite3
+
+    client.post("/documents", files=[("files", ("notes.md", b"first version\n", "text/markdown"))])
+    conn = sqlite3.connect(workspace / "chunklab.db")
+    conn.execute("UPDATE documents SET content_hash = NULL WHERE id = 'notes'")
+    conn.commit()
+    conn.close()
+
+    r = client.post(
+        "/documents", files=[("files", ("notes.md", b"first version\n", "text/markdown"))]
+    )
+    assert "notes.md: replaced existing document" in r.text
+    assert "spans on it may be stale" in r.text
+
+
 def test_upload_keeps_the_uploaded_filename(client: TestClient):
     client.post("/documents", files=[("files", ("My Report.md", b"body text\n", "text/markdown"))])
     rows = client.app.state.store.list_documents()

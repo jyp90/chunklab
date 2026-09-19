@@ -40,6 +40,10 @@
     if (panel) {
       panel.innerHTML = html;
       if (window.htmx) htmx.process(panel);
+      // Same reset as the htmx:afterSwap hook below, which does not fire for
+      // this hand-rolled swap: the picked row no longer exists.
+      picked = null;
+      refreshToolbar();
     }
     return res.ok;
   }
@@ -100,12 +104,21 @@
 
   document.addEventListener("selectionchange", onSelectionChange);
 
-  // The question panel is re-rendered by htmx; any "Pick" made against the old
-  // list no longer refers to a rendered row.
   document.body.addEventListener("htmx:afterSwap", (e) => {
-    if (e.target && e.target.id === "question-panel") {
+    if (!e.target) return;
+    if (e.target.id === "question-panel") {
+      // The list was re-rendered; any "Pick" made against the old one no
+      // longer refers to a rendered row.
       picked = null;
       refreshToolbar();
+    } else if (e.target.id === "doc-view") {
+      // A different document may now be on screen (clicking a question's link
+      // loads its document). Offsets into the previous one are meaningless,
+      // and focus is still inside the panel, so selectionchange would have
+      // kept them.
+      lastSpan = null;
+      picked = null;
+      hideToolbar();
     }
   });
 
