@@ -10,7 +10,11 @@
     const r = document.createRange();
     r.setStart(pre, 0);
     r.setEnd(node, offset);
-    return r.toString().length;
+    // Count CODE POINTS, not UTF-16 code units: the server stores spans as
+    // Python string offsets, where an astral character (emoji, some CJK ext.)
+    // is 1, while JS `.length` counts it as 2. Spreading a string iterates
+    // code points, so `[...s].length` matches `len(s)` in Python.
+    return [...r.toString()].length;
   }
 
   function currentSpan() {

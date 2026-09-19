@@ -103,3 +103,26 @@ def test_view_with_question_highlights_gold(client: TestClient):
     qid = client.app.state.store.list_questions()[0].id
     r = client.get(f"/documents/sample/view?q={qid}")
     assert '<mark class="gold">Customers may request' in r.text
+
+
+def test_emoji_document_offsets_slice_expected_text(client: TestClient):
+    """Offsets are Python code points, not UTF-16 code units.
+
+    Pins the contract that ``static/app.js::offsetWithin`` must honour: a
+    non-BMP character before the selection (🙂 is one UTF-16 surrogate pair,
+    one code point) must not shift the highlighted range.
+    """
+    body = "Intro \U0001f642 line.\n\nRefund within 30 days.\n"
+    client.post("/documents", files=[("files", ("emoji.md", body.encode(), "text/markdown"))])
+    doc = client.app.state.store.get_document("emoji")
+    target = "Refund within 30 days."
+    start = doc.text.index(target)
+    end = start + len(target)
+    assert start != len(doc.text[:start].encode("utf-16-le")) // 2  # differs from a UTF-16 offset
+    r = client.post(
+        "/questions", data={"text": "refund?", "doc_id": "emoji", "start": start, "end": end}
+    )
+    assert r.status_code == 200
+    qid = client.app.state.store.list_questions()[0].id
+    r = client.get(f"/documents/emoji/view?q={qid}")
+    assert f'<mark class="gold">{target}</mark>' in r.text
