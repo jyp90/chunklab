@@ -1,7 +1,8 @@
 <div class="toolbar">
   <strong>Questions ({{ questions|length }})</strong>
   <form hx-post="/questions/auto-generate" hx-target="#question-panel" style="display:inline">
-    <input type="number" name="per_doc" value="5" min="1" max="50" style="width:60px" title="per document">
+    <input type="number" name="per_doc" value="5" min="1" max="50" style="width:60px" title="questions per document"><span class="muted">per doc</span>
+    <input type="number" name="min_len" value="120" min="20" max="2000" step="10" style="width:70px" title="min passage length (chars)"><span class="muted">min chars</span>
     <select name="llm"><option>openai</option><option>gemini</option><option value="fake">fake (offline)</option></select>
     <button type="submit">Auto-generate</button>
   </form>

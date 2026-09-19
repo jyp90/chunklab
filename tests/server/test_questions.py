@@ -73,6 +73,13 @@ def test_generate_missing_key_is_400(client: TestClient, monkeypatch):
     assert r.status_code == 400 and "OPENAI_API_KEY" in r.text
 
 
+def test_panel_exposes_min_len_control(client: TestClient):
+    r = client.get("/questions/panel")
+    assert r.status_code == 200
+    assert 'name="min_len"' in r.text and 'name="per_doc"' in r.text
+    assert "min chars" in r.text and "per doc" in r.text
+
+
 def test_auto_generate_and_export_import(client: TestClient, tmp_path: Path):
     _upload(client)
     r = client.post(
@@ -80,6 +87,7 @@ def test_auto_generate_and_export_import(client: TestClient, tmp_path: Path):
         data={"per_doc": 2, "llm": "fake", "min_len": 50, "max_len": 600},
     )
     assert r.status_code == 200
+    assert 'name="min_len"' in r.text  # the form round-trips with the control
     assert len(client.app.state.store.list_questions()) == 2
 
     r = client.get("/questions/export")
