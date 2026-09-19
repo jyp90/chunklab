@@ -10,6 +10,13 @@ def test_parse_grid():
         parse_grid("256, big")
 
 
+def test_parse_grid_rejects_non_positive():
+    with pytest.raises(ValueError, match="positive"):
+        parse_grid("256, 0")
+    with pytest.raises(ValueError, match="positive"):
+        parse_grid("-5")
+
+
 def test_config_from_form_full():
     cfg = config_from_form(
         {

@@ -1,0 +1,6 @@
+<div id="run-status" hx-get="/experiment/status/{{ st.run_id }}" hx-trigger="{{ 'every 1s' if st.state == 'running' else 'none' }}" hx-swap="outerHTML">
+  <div class="progress"><div style="width: {{ (100 * st.done / st.total) if st.total else 0 }}%"></div></div>
+  <p>{{ st.state }} &middot; {{ st.done }} / {{ st.total }} combos
+  {% if st.state == 'error' %}<span class="error">{{ st.error }}</span>{% endif %}
+  {% if st.state == 'done' %}<a href="/results/{{ st.run_id }}">open results &rarr;</a>{% endif %}</p>
+</div>

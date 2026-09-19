@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<p class="muted">{{ n_docs }} document(s) &middot; {{ n_questions }} question(s)</p>
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+<form id="exp-form" hx-post="/experiment/run" hx-target="#run-status">
+  <fieldset><legend>Chunkers (comma-separated grids, characters)</legend>
+    <label><input type="checkbox" name="chunker_recursive" checked> recursive</label>
+      chunk_size <input type="text" name="recursive_chunk_size" value="256, 512, 1024" size="14">
+      overlap <input type="text" name="recursive_overlap" value="0, 64" size="8"><br>
+    <label><input type="checkbox" name="chunker_sentence_window" checked> sentence_window</label>
+      window <input type="text" name="sentence_window_window" value="1, 2" size="6"><br>
+    <label><input type="checkbox" name="chunker_markdown" checked> markdown</label>
+      chunk_size <input type="text" name="markdown_chunk_size" value="800" size="8">
+  </fieldset>
+  <fieldset><legend>Embedders</legend>
+    <select name="embedders" multiple size="5">
+      {% for e in embedder_choices %}<option value="{{ e }}" {% if e == 'fake' %}selected{% endif %}>{{ e }}</option>{% endfor %}
+    </select>
+    custom spec(s): <input type="text" name="embedder_custom" placeholder="openai:my-model, local:bge-small" size="30">
+    <div class="muted">Keys are read from OPENAI_API_KEY / GEMINI_API_KEY in the shell that started <code>chunklab ui</code>. "fake" runs offline.</div>
+  </fieldset>
+  <fieldset><legend>Retrieval</legend>
+    top_k <input type="text" name="top_k" value="5" size="6">
+    <select name="hybrid"><option value="dense">dense only</option><option value="hybrid">dense + BM25</option><option value="both" selected>both</option></select>
+    hit_threshold <input type="number" name="hit_threshold" value="0.5" min="0.05" max="1" step="0.05">
+  </fieldset>
+  <div class="toolbar">
+    <button class="primary" type="submit" {% if n_questions == 0 %}disabled{% endif %}>Run</button>
+    <button type="submit" formaction="/experiment/export" formmethod="post" hx-disable>Export exp.yaml</button>
+    {% if n_questions == 0 %}<span class="muted">Add questions on the Documents page first.</span>{% endif %}
+  </div>
+</form>
+<div id="run-status"></div>
+{% endblock %}

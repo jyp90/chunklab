@@ -7,14 +7,17 @@ import yaml
 from chunklab.core.runner import ExperimentConfig
 
 
-def parse_grid(value: str) -> list[int]:
+def parse_grid(value: str, *, allow_zero: bool = False) -> list[int]:
     out: list[int] = []
     for part in (p.strip() for p in value.split(",")):
         if not part:
             continue
         if not part.lstrip("-").isdigit():
             raise ValueError(f"'{part}' is not an integer")
-        out.append(int(part))
+        n = int(part)
+        if n < 0 or (n == 0 and not allow_zero):
+            raise ValueError("grid values must be positive integers")
+        out.append(n)
     return out
 
 
@@ -38,7 +41,8 @@ def config_from_form(form: Mapping[str, str | list[str]]) -> ExperimentConfig:
                 "name": "recursive",
                 "params": {
                     "chunk_size": parse_grid(_get(form, "recursive_chunk_size", "512")) or [512],
-                    "overlap": parse_grid(_get(form, "recursive_overlap", "0")) or [0],
+                    "overlap": parse_grid(_get(form, "recursive_overlap", "0"), allow_zero=True)
+                    or [0],
                 },
             }
         )
