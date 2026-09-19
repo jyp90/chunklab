@@ -7,6 +7,7 @@ from fastapi import APIRouter, Request, UploadFile
 from fastapi.responses import HTMLResponse
 
 from chunklab.core.text import MAX_DOCUMENT_BYTES, load_document
+from chunklab.server.highlight import render_highlighted
 
 router = APIRouter()
 _SAFE = re.compile(r"[^A-Za-z0-9._-]")
@@ -97,4 +98,10 @@ def view_document(request: Request, doc_id: str, q: str | None = None):
     doc = request.app.state.store.get_document(doc_id)
     if doc is None:
         return HTMLResponse("<p class='error'>document not found</p>", status_code=404)
-    return _render(request, "partials/doc_view.html", {"doc": doc, "html": None, "q": q})
+    html = None
+    if q is not None:
+        question = request.app.state.store.get_question(q)
+        if question is not None:
+            gold = [(s.start, s.end) for s in question.spans if s.doc_id == doc_id]
+            html = render_highlighted(doc.text, gold)
+    return _render(request, "partials/doc_view.html", {"doc": doc, "html": html, "q": q})

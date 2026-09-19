@@ -87,3 +87,19 @@ def test_delete_removes_only_its_own_file(client: TestClient, workspace: Path):
 def test_view_rejects_bad_id(client: TestClient):
     r = client.get("/documents/..%2Fx/view")
     assert r.status_code == 404
+
+
+def _upload(client):
+    with SAMPLE.open("rb") as f:
+        client.post("/documents", files=[("files", ("sample.md", f, "text/markdown"))])
+    return client.app.state.store.get_document("sample")
+
+
+def test_view_with_question_highlights_gold(client: TestClient):
+    doc = _upload(client)
+    s = doc.text.index("Customers")
+    e = doc.text.index("Digital")
+    client.post("/questions", data={"text": "?", "doc_id": "sample", "start": s, "end": e})
+    qid = client.app.state.store.list_questions()[0].id
+    r = client.get(f"/documents/sample/view?q={qid}")
+    assert '<mark class="gold">Customers may request' in r.text
