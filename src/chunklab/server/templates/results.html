@@ -16,16 +16,14 @@
   {% endfor %}
   </tbody>
 </table>
-<div class="row" style="margin-top:20px">
-  <div class="col">
-    <label>Question:
-      <select name="qid"
-              onchange="if(this.value){htmx.ajax('GET', '/results/{{ result.run_id }}/question/' + encodeURIComponent(this.value), '#question-detail')}else{document.getElementById('question-detail').innerHTML=''}">
-        <option value="">&mdash; pick a question &mdash;</option>
-        {% for q in questions %}<option value="{{ q.id }}">{{ q.text }}</option>{% endfor %}
-      </select></label>
-    <div id="question-detail"></div>
-  </div>
-  <div class="col-narrow" id="snippet"><p class="muted">Click &ldquo;code&rdquo; on a combo to get a snippet.</p></div>
-</div>
+<section style="margin-top:20px">
+  <label>Question:
+    <select name="qid"
+            onchange="if(this.value){htmx.ajax('GET', '/results/{{ result.run_id }}/question/' + encodeURIComponent(this.value), '#question-detail')}else{document.getElementById('question-detail').innerHTML=''}">
+      <option value="">&mdash; pick a question &mdash;</option>
+      {% for q in questions %}<option value="{{ q.id }}">{{ q.text }}</option>{% endfor %}
+    </select></label>
+  <div id="question-detail"></div>
+</section>
+<section id="snippet" style="margin-top:20px"><p class="muted">Click &ldquo;code&rdquo; on a combo to get a snippet.</p></section>
 {% endblock %}

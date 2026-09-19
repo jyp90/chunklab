@@ -52,6 +52,16 @@ def test_results_table_and_recommendation(client: TestClient):
     assert 'class="recommended"' in r.text or "recommended" in r.text
 
 
+def test_results_layout_is_stacked_full_width(client: TestClient):
+    rid = _run(client)
+    r = client.get(f"/results/{rid}")
+    assert r.status_code == 200
+    assert 'class="col-narrow"' not in r.text
+    detail_pos = r.text.index('id="question-detail"')
+    snippet_pos = r.text.index('id="snippet"')
+    assert detail_pos < snippet_pos
+
+
 def test_results_sort_by_precision(client: TestClient):
     rid = _run(client)
     r = client.get(f"/results/{rid}?sort=precision")

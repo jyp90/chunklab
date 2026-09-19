@@ -9,7 +9,7 @@ main { padding:20px; max-width:1400px; margin:0 auto; }
 .muted { color:var(--muted); }
 .row { display:flex; gap:20px; align-items:flex-start; }
 .col { flex:1; min-width:0; }
-.col-narrow { flex:0 0 320px; }
+.col-narrow { flex:0 0 320px; min-width:0; }
 button, .btn { padding:6px 12px; border:1px solid var(--line); border-radius:6px; background:#f6f8fa; cursor:pointer; }
 button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
 button:disabled { opacity:.5; cursor:default; }
@@ -28,6 +28,6 @@ mark.both { background:var(--both); }
 ul.plain { list-style:none; padding:0; margin:0; }
 ul.plain li { padding:6px 0; border-bottom:1px solid var(--line); }
 .tabs button.active { background:var(--fg); color:#fff; }
-pre.code { background:#f6f8fa; padding:12px; border-radius:6px; overflow:auto; }
+pre.code { background:#f6f8fa; padding:12px; border-radius:6px; overflow:auto; max-width:100%; }
 .progress { height:8px; background:var(--line); border-radius:4px; overflow:hidden; }
 .progress > div { height:100%; background:var(--accent); }
