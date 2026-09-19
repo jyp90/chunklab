@@ -1,6 +1,9 @@
 // chunklab UI — selection → span, question actions. No framework.
 (function () {
   let picked = null; // question id chosen via "Pick"
+  // Last non-empty selection inside #doc. Clicking the question input collapses
+  // the selection, so we cannot ask the DOM for it when a button is pressed.
+  let lastSpan = null;
 
   // Character offset of (node, offset) from the start of `pre`, counting only
   // text. Container-agnostic: works when the Range is anchored on a text node,
@@ -41,16 +44,51 @@
     return res.ok;
   }
 
-  function refreshToolbar() {
+  function showToolbar(span) {
     const tb = document.getElementById("sel-toolbar");
     if (!tb) return;
+    tb.hidden = false;
+    const info = document.getElementById("sel-info");
+    if (info) info.textContent = span.docId + " " + span.start + "–" + span.end;
+    const setBtn = document.getElementById("btn-set-span");
+    if (setBtn) setBtn.hidden = !picked;
+  }
+
+  function hideToolbar() {
+    const tb = document.getElementById("sel-toolbar");
+    if (tb) tb.hidden = true;
+  }
+
+  // Re-render the toolbar from the remembered span (e.g. after "Pick" toggles
+  // the "Set span" button).
+  function refreshToolbar() {
+    if (lastSpan) showToolbar(lastSpan);
+    else hideToolbar();
+  }
+
+  // True while focus sits in the question UI: the browser collapsed the
+  // document selection only because the user clicked an input or a button
+  // there, which must NOT throw the selection away.
+  function focusIsInQuestionUi() {
+    const active = document.activeElement;
+    if (!active) return false;
+    const tb = document.getElementById("sel-toolbar");
+    const panel = document.getElementById("question-panel");
+    return !!((tb && tb.contains(active)) || (panel && panel.contains(active)));
+  }
+
+  function onSelectionChange() {
     const span = currentSpan();
-    tb.hidden = !span;
     if (span) {
-      document.getElementById("sel-info").textContent =
-        span.docId + " " + span.start + "–" + span.end;
-      document.getElementById("btn-set-span").hidden = !picked;
+      lastSpan = span;
+      showToolbar(span);
+      return;
     }
+    const sel = window.getSelection();
+    const collapsed = !sel || sel.rangeCount === 0 || sel.isCollapsed;
+    if (collapsed && lastSpan && focusIsInQuestionUi()) return; // keep it
+    lastSpan = null;
+    hideToolbar();
   }
 
   // htmx 2.x drops 4xx responses by default; our 400/404 bodies ARE the panel
@@ -60,7 +98,16 @@
     if (status === 400 || status === 404) e.detail.shouldSwap = true;
   });
 
-  document.addEventListener("selectionchange", refreshToolbar);
+  document.addEventListener("selectionchange", onSelectionChange);
+
+  // The question panel is re-rendered by htmx; any "Pick" made against the old
+  // list no longer refers to a rendered row.
+  document.body.addEventListener("htmx:afterSwap", (e) => {
+    if (e.target && e.target.id === "question-panel") {
+      picked = null;
+      refreshToolbar();
+    }
+  });
 
   // Export must be a real navigation (native form submit) so the browser
   // treats the Content-Disposition: attachment response as a download
@@ -92,9 +139,10 @@
       return;
     }
     if (t.id === "btn-add-q" || t.id === "btn-gen-q" || t.id === "btn-set-span") {
-      const span = currentSpan();
+      const span = lastSpan || currentSpan();
       if (!span) return;
       const base = { doc_id: span.docId, start: span.start, end: span.end };
+      let ok = false;
       if (t.id === "btn-add-q") {
         const input = document.getElementById("new-q-text");
         const text = input.value.trim();
@@ -102,20 +150,22 @@
           alert("Type the question first.");
           return;
         }
-        await post("/questions", Object.assign({}, base, { text: text }));
-        input.value = "";
+        ok = await post("/questions", Object.assign({}, base, { text: text }));
+        if (ok) input.value = "";
       } else if (t.id === "btn-gen-q") {
         const sel = document.querySelector('select[name="llm"]');
-        await post(
+        ok = await post(
           "/questions/generate-from-selection",
           Object.assign({}, base, { llm: (sel && sel.value) || "openai" })
         );
       } else if (picked) {
-        await post("/questions/" + encodeURIComponent(picked) + "/span", base);
-        picked = null;
+        ok = await post("/questions/" + encodeURIComponent(picked) + "/span", base);
+        if (ok) picked = null;
       }
+      if (!ok) return; // keep the selection so the user can fix and retry
+      lastSpan = null;
       window.getSelection().removeAllRanges();
-      refreshToolbar();
+      hideToolbar();
     }
   });
 })();
