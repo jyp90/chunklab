@@ -60,8 +60,15 @@ chunklab snippet result.json --combo "<id>" --framework langchain
 `skills/chunking-benchmark/SKILL.md` teaches Claude Code to benchmark instead of guess when you ask "how should I chunk these docs?". Install it for your user or project:
 
 ```bash
+# from a clone
 mkdir -p ~/.claude/skills && cp -r skills/chunking-benchmark ~/.claude/skills/     # all projects
 # or: mkdir -p .claude/skills && cp -r skills/chunking-benchmark .claude/skills/  # this repo only
+
+# without cloning
+mkdir -p ~/.claude/skills/chunking-benchmark && curl -fsSL \
+  https://raw.githubusercontent.com/jyp90/chunklab/main/skills/chunking-benchmark/SKILL.md \
+  -o ~/.claude/skills/chunking-benchmark/SKILL.md
+uv tool install chunkmatrix   # or: uv tool install git+https://github.com/jyp90/chunklab
 ```
 
 Then ask Claude: *"pick a chunking strategy for docs/ and give me the LangChain code"* — it runs `generate-questions → run --json → recommend → snippet` and answers with measured numbers.

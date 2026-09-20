@@ -18,7 +18,12 @@ Skip it when the question is about generation quality, reranking, or vector-DB o
 
 ## Preconditions (check, don't assume)
 
-1. `chunklab` available: `uv run chunklab version` inside the project, or `pipx run chunklab version`, or `pip install chunkmatrix` (PyPI name; the CLI is still `chunklab`). If not installed, install it — it is small (no torch unless `chunkmatrix[local]`).
+1. `chunklab` available: check with `chunklab version`. If missing, install it as a tool (small; no torch unless you add the `[local]` extra):
+   ```bash
+   uv tool install chunkmatrix                                   # PyPI (CLI is still `chunklab`)
+   uv tool install git+https://github.com/jyp90/chunklab          # if the PyPI release is not available yet
+   ```
+   (`pipx install ...` works the same way.) Do not `pip install` into the user's project venv unless they ask.
 2. Documents: a folder of `.md` / `.txt` / `.pdf` (≤10 MB each). Ask for the path if not obvious from the repo.
 3. Embedding + LLM key: `OPENAI_API_KEY` or `GEMINI_API_KEY` in the environment. If neither is set, say so and run offline with the `fake` embedder/LLM only to demonstrate the workflow — never present offline numbers as a real recommendation.
 
